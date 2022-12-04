@@ -1,34 +1,25 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import './App.css';
+
+import { ChakraProvider } from '@chakra-ui/react';
+import { Button } from '@chakra-ui/react';
+import { useCallback, useState } from 'react';
+
+import { Api, Chessboard } from './components/Chessboard';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [board, setBoard] = useState<Api | undefined>();
+  const toggleOrientation = useCallback(() => {
+    board?.toggleOrientation();
+  }, [board]);
 
   return (
-    <div className="App">
+    <ChakraProvider>
       <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <Chessboard onLoad={setBoard}></Chessboard>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
-  )
+      <Button onClick={toggleOrientation}>Toggle orientation</Button>
+    </ChakraProvider>
+  );
 }
 
-export default App
+export default App;
