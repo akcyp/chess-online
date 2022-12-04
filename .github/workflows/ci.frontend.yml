@@ -1,10 +1,18 @@
-name: Code quality check
+name: Frontend code quality check
 
-on: [push]
+on:
+  push:
+    paths:
+      - "frontend/**"
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+      env:
+        CI: true
     strategy:
       matrix:
         node-version: [19]
@@ -18,18 +26,11 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "pnpm"
-      - run: cd frontend
       - name: Install dependencies
         run: |
           pnpm install
-        env:
-          CI: true
       - name: Check code style
         run: pnpm run lint
-        env:
-          CI: true
       - name: Check build
         run: |
           pnpm run build
-        env:
-          CI: true
