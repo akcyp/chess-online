@@ -6,9 +6,9 @@ import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { BasicLayout } from './layouts/Basic/BasicLayout';
-import { NotFound } from './pages/404/NotFound';
-import { Game, loader as gameLoader } from './pages/Game/Game';
-import { Lobby } from './pages/Lobby/Lobby';
+import { NotFound } from './pages/404';
+import { Game, loader as gameLoader } from './pages/Game';
+import { Lobby } from './pages/Lobby';
 
 const router = createBrowserRouter([
   {

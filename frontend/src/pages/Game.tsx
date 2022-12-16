@@ -1,5 +1,3 @@
-import './Game.css';
-
 import { Grid, GridItem } from '@chakra-ui/react';
 import { Button } from '@chakra-ui/react';
 import { Chessboard, ChessboardActions } from '@components/Chessboard';

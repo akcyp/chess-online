@@ -1,0 +1,29 @@
+@keyframes glitch {
+  0% {
+    transform: none;
+    text-shadow: none;
+  }
+  10% {
+    transform: none;
+    text-shadow: 3px 3px 4px black;
+  }
+  20% {
+    transform: none;
+    text-shadow: 2px 2px 2px pink;
+  }
+  50% {
+    transform: none;
+  }
+  51% {
+    transform: skew(9deg, 0deg);
+  }
+  54% {
+    transform: skew(5deg, 0deg);
+  }
+  55% {
+    transform: none;
+  }
+  100% {
+    transform: none;
+  }
+}
