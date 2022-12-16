@@ -1,15 +1,22 @@
-import './App.css';
+import './Game.css';
 
-import { ChakraProvider, Grid, GridItem } from '@chakra-ui/react';
+import { Grid, GridItem } from '@chakra-ui/react';
 import { Button } from '@chakra-ui/react';
+import { Chessboard, ChessboardActions } from '@components/Chessboard';
 import { Chess } from 'chess.js';
 import { useCallback, useRef, useState } from 'react';
+import { LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { monokai } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
-import { Chessboard, ChessboardActions } from './components/Chessboard';
+export const loader = async ({ params }: LoaderFunctionArgs) => {
+  const id = params['id'] || '';
+  console.log(id); // validate
+  return { id };
+};
 
-function App() {
+export const Game = () => {
+  const { id } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const ref = useRef<ChessboardActions>(null);
   const [engine] = useState(new Chess());
   const [fen, setFen] = useState(engine.fen());
@@ -51,20 +58,17 @@ function App() {
   );
 
   return (
-    <ChakraProvider>
-      <Grid templateColumns="repeat(5, 1fr)" gap={6}>
-        <GridItem w="100%" h="10%0">
-          <Chessboard ref={ref} onLoad={onLoad} onMove={onMove}></Chessboard>
-        </GridItem>
-        <GridItem w="100%" h="10%0">
-          <Button onClick={toggleOrientation}>Toggle orientation</Button>
-          <SyntaxHighlighter style={monokai} language="json">
-            {code}
-          </SyntaxHighlighter>
-        </GridItem>
-      </Grid>
-    </ChakraProvider>
+    <Grid templateColumns="repeat(5, 1fr)" gap={6}>
+      <GridItem w="100%" h="10%0">
+        <div>Game id: {id}</div>
+        <Chessboard ref={ref} onLoad={onLoad} onMove={onMove}></Chessboard>
+      </GridItem>
+      <GridItem w="100%" h="10%0">
+        <Button onClick={toggleOrientation}>Toggle orientation</Button>
+        <SyntaxHighlighter style={monokai} language="json">
+          {code}
+        </SyntaxHighlighter>
+      </GridItem>
+    </Grid>
   );
-}
-
-export default App;
+};
