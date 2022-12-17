@@ -1,3 +1,4 @@
+import { Box } from '@chakra-ui/react';
 import { Navbar } from '@components/Navbar';
 import { Outlet } from 'react-router-dom';
 
@@ -9,7 +10,7 @@ export const BasicLayout = ({ children }: BasicLayoutProps) => {
   return (
     <>
       <Navbar />
-      {children ? children : <Outlet />}
+      <Box padding={6}>{children ? children : <Outlet />}</Box>
     </>
   );
 };

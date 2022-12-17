@@ -6,9 +6,11 @@ import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { BasicLayout } from './layouts/Basic/BasicLayout';
-import { NotFound } from './pages/404';
-import { Game, loader as gameLoader } from './pages/Game';
-import { Lobby } from './pages/Lobby';
+import { NotFoundPage } from './pages/404';
+import { AboutPage } from './pages/About';
+import { CreateGamePage } from './pages/CreateGame';
+import { GamePage, loader as gameLoader } from './pages/Game';
+import { LobbyPage } from './pages/Lobby';
 
 const router = createBrowserRouter([
   {
@@ -17,15 +19,27 @@ const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <Lobby />,
+        element: <LobbyPage />,
       },
       {
         loader: gameLoader,
         path: '/game/:id',
-        element: <Game />,
+        element: <GamePage />,
+      },
+      {
+        path: '/about',
+        element: <AboutPage />,
+      },
+      {
+        path: '/play/public',
+        element: <CreateGamePage type="public" />,
+      },
+      {
+        path: '/play/private',
+        element: <CreateGamePage type="private" />,
       },
     ],
-    errorElement: <NotFound />,
+    errorElement: <NotFoundPage />,
   },
 ]);
 

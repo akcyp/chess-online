@@ -13,7 +13,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   return { id };
 };
 
-export const Game = () => {
+export const GamePage = () => {
   const { id } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const ref = useRef<ChessboardActions>(null);
   const [engine] = useState(new Chess());

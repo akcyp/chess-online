@@ -8,7 +8,7 @@ const Fancy404Text = styled.div`
   animation: glitch 5s linear infinite;
 `;
 
-export const NotFound = () => {
+export const NotFoundPage = () => {
   return (
     <BasicLayout>
       <Center h="80vh">
