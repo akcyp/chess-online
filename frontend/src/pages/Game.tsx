@@ -21,11 +21,12 @@ import {
 } from '@chakra-ui/react';
 import { Chessboard, ChessboardActions } from '@components/Chessboard';
 import { Chess } from 'chess.js';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { monokai } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
+import { parseTimerString } from '../helpers/parseTimerToString';
 import { useKeyboard } from '../hooks/useKeyboard';
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
@@ -34,26 +35,31 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   return { id };
 };
 
-const PlayerTimer = ({
-  milis,
-  extended = false,
-  panic = false,
-}: {
-  milis: number;
-  extended?: boolean;
-  panic: boolean;
-}) => {
-  const minutes = Math.floor(milis / 1e3 / 60);
-  const seconds = Math.floor((milis / 1e3) % 60);
-  const miliseconds = milis % 1e3;
-  const addZero = (val: number, d = 2) => val.toString().padStart(d, '0');
+const PlayerTimer = ({ milis, auto = true }: { milis: number; auto?: boolean }) => {
+  const [miliseconds, setMiliseconds] = useState(milis);
+  const extended = miliseconds <= 5e3;
+  const panic = miliseconds <= 5e3;
+
+  useEffect(() => {
+    setMiliseconds(milis);
+  }, [milis]);
+
+  useEffect(() => {
+    if (!auto) {
+      return;
+    }
+    const intervalStart = Date.now();
+    const interval = setInterval(() => {
+      setMiliseconds(milis - (Date.now() - intervalStart));
+    }, 10);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [milis, auto]);
+
   return (
     <Box boxShadow="xl" p={4} bg={panic ? 'red.400' : 'blackAlpha.700'} w={150} color="white" textAlign="center">
-      <Text fontSize="2xl">
-        {extended
-          ? `${addZero(minutes)}:${addZero(seconds)}:${addZero(miliseconds, 3)}`
-          : `${addZero(minutes)}:${addZero(seconds)}`}
-      </Text>
+      <Text fontSize="2xl">{parseTimerString(miliseconds, extended)}</Text>
     </Box>
   );
 };
@@ -131,7 +137,7 @@ export const GamePage = () => {
           </GridItem>
           <GridItem w={400}>
             <Flex direction="column">
-              <PlayerTimer milis={(5 * 60 + 45) * 1e3} panic={false} />
+              <PlayerTimer milis={(5 * 60 + 45) * 1e3} auto={true} />
               <Box shadow="xl">
                 <PlayerBox nick="TestUser123" online={true} />
                 <Box textAlign="center">
@@ -160,7 +166,7 @@ export const GamePage = () => {
                 </HStack>
                 <PlayerBox nick="TestPlayer123" online={false} />
               </Box>
-              <PlayerTimer milis={5 * 1e3} panic={true} />
+              <PlayerTimer milis={5 * 1e3} auto={false} />
             </Flex>
           </GridItem>
         </Grid>
