@@ -6,17 +6,32 @@ import Logo from '../assets/chess_logo.png';
 
 export const LobbyPage = () => {
   return (
-    <Grid h="200px" templateRows="repeat(2, 1fr)" templateColumns="repeat(5, 1fr)" gap={4}>
-      <GridItem colSpan={3}>
-        <Box height="80vh">
+    <Grid
+      h="80vh"
+      gap={4}
+      justifyItems="center"
+      gridTemplateAreas={[
+        // Mobile
+        `"logo"
+         "games"
+         "stats"`,
+        // Tablet
+        `"games games logo"
+         "games games stats"`,
+        // Desktop
+        `"games games games stats logo"`,
+      ]}
+    >
+      <GridItem area="games" w="100%">
+        <Box h="80vh">
           <GamesTable games={GAMES_LIST} />
         </Box>
       </GridItem>
-      <GridItem colSpan={1}>
+      <GridItem area="stats">
         <Box>Players online: 0</Box>
         <Box>Games: {GAMES_LIST.length}</Box>
       </GridItem>
-      <GridItem colSpan={1}>
+      <GridItem area="logo" w={['300px', '200px']}>
         <Image src={Logo} alt="PF Chess" />
         <Button margin={1} w="100%" as={Link} to="/play/public">
           Create game

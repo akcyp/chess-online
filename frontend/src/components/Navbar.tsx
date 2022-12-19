@@ -19,7 +19,7 @@ import { Link as RLink } from 'react-router-dom';
 import Logo from '../assets/chess_logo_text.png';
 
 const RenderLogo = () => (
-  <img src={Logo} style={{ width: '72px', transform: 'scale(1.5) translate(10px, 0)' }} alt="PF Chess" />
+  <img src={Logo} style={{ width: '72px', transform: 'scale(2) translate(12px, 0px)' }} alt="PF Chess" />
 );
 
 export const Navbar = () => {
@@ -47,7 +47,7 @@ export const Navbar = () => {
         </Flex>
         <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
           <RenderLogo />
-          <Flex display={{ base: 'none', md: 'flex' }} ml={16}>
+          <Flex display={{ base: 'none', md: 'flex' }} ml={20}>
             <DesktopNav />
           </Flex>
         </Flex>
