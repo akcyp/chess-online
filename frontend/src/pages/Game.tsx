@@ -1,32 +1,11 @@
-import { CloseIcon, MinusIcon, UpDownIcon } from '@chakra-ui/icons';
-import {
-  Badge,
-  Box,
-  Center,
-  Circle,
-  Flex,
-  Grid,
-  GridItem,
-  HStack,
-  IconButton,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalHeader,
-  ModalOverlay,
-  Text,
-  Tooltip,
-  useBoolean,
-} from '@chakra-ui/react';
+import { Center, Grid, GridItem, useBoolean } from '@chakra-ui/react';
 import { Chessboard, ChessboardActions } from '@components/Chessboard';
+import { DebugModal } from '@components/DebugModal';
+import { GamePanel } from '@components/GamePanel';
 import { Chess } from 'chess.js';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
-import SyntaxHighlighter from 'react-syntax-highlighter';
-import { monokai } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import { useCallback, useRef, useState } from 'react';
+import { LoaderFunctionArgs, useLoaderData, useNavigate } from 'react-router-dom';
 
-import { parseTimerString } from '../helpers/parseTimerToString';
 import { useKeyboard } from '../hooks/useKeyboard';
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
@@ -35,54 +14,16 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   return { id };
 };
 
-const PlayerTimer = ({ milis, auto = true }: { milis: number; auto?: boolean }) => {
-  const [miliseconds, setMiliseconds] = useState(milis);
-  const extended = miliseconds <= 5e3;
-  const panic = miliseconds <= 5e3;
-
-  useEffect(() => {
-    setMiliseconds(milis);
-  }, [milis]);
-
-  useEffect(() => {
-    if (!auto) {
-      return;
-    }
-    const intervalStart = Date.now();
-    const interval = setInterval(() => {
-      setMiliseconds(milis - (Date.now() - intervalStart));
-    }, 10);
-    return () => {
-      clearInterval(interval);
-    };
-  }, [milis, auto]);
-
-  return (
-    <Box boxShadow="xl" p={4} bg={panic ? 'red.400' : 'blackAlpha.700'} w={150} color="white" textAlign="center">
-      <Text fontSize="2xl">{parseTimerString(miliseconds, extended)}</Text>
-    </Box>
-  );
-};
-
-const PlayerBox = ({ nick, online }: { nick: string; online: boolean }) => (
-  <Box boxShadow="xs" p={2} bg="whiteAlpha.600">
-    <HStack ml={4}>
-      <Circle size="16px" bg={online ? 'green' : 'gray'} />
-      <Text fontStyle="bold">{nick}</Text>
-    </HStack>
-  </Box>
-);
-
 export const GamePage = () => {
   const { id } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
-  const ref = useRef<ChessboardActions>(null);
+  const navigate = useNavigate();
+
   const [engine] = useState(new Chess());
   const [fen, setFen] = useState(engine.fen());
+  const [orientation, setOrientation] = useState<'white' | 'black'>('white');
   const [isDebugModalOpen, debugModal] = useBoolean(false);
 
-  const toggleOrientation = useCallback(() => {
-    ref.current?.getApi().toggleOrientation();
-  }, [ref]);
+  const ref = useRef<ChessboardActions>(null);
 
   const onLoad = useCallback(() => {
     console.log(ref.current);
@@ -118,56 +59,48 @@ export const GamePage = () => {
 
   return (
     <>
-      <Modal size="xl" isOpen={isDebugModalOpen} onClose={debugModal.off}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Debug informations</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <SyntaxHighlighter style={monokai} language="json">
-              {JSON.stringify(state, undefined, 2).toString()}
-            </SyntaxHighlighter>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <DebugModal data={state} isOpen={isDebugModalOpen} onClose={debugModal.off} />
       <Center h="80vh">
         <Grid templateColumns="496px 1fr" alignItems="center">
           <GridItem w="496px">
             <Chessboard ref={ref} onLoad={onLoad} onMove={onMove}></Chessboard>
           </GridItem>
           <GridItem w={400}>
-            <Flex direction="column">
-              <PlayerTimer milis={(5 * 60 + 45) * 1e3} auto={true} />
-              <Box shadow="xl">
-                <PlayerBox nick="TestUser123" online={true} />
-                <Box textAlign="center">
-                  <Badge colorScheme="purple" fontSize="xl">
-                    Game: #{id}
-                  </Badge>
-                </Box>
-                <Box textAlign="center">
-                  <Badge colorScheme="purple">5m + 3s</Badge>
-                </Box>
-                <HStack justifyContent="center" p={2}>
-                  <Tooltip label="Toggle orientation">
-                    <IconButton
-                      colorScheme="blue"
-                      icon={<UpDownIcon />}
-                      aria-label="Toggle orientation"
-                      onClick={toggleOrientation}
-                    ></IconButton>
-                  </Tooltip>
-                  <Tooltip label="Offer a draw">
-                    <IconButton colorScheme="orange" icon={<MinusIcon />} aria-label="Offer a draw"></IconButton>
-                  </Tooltip>
-                  <Tooltip label="Resign">
-                    <IconButton colorScheme="red" icon={<CloseIcon />} aria-label="Resign"></IconButton>
-                  </Tooltip>
-                </HStack>
-                <PlayerBox nick="TestPlayer123" online={false} />
-              </Box>
-              <PlayerTimer milis={5 * 1e3} auto={false} />
-            </Flex>
+            <GamePanel
+              config={{
+                id,
+                time: [5, 3],
+                orientation,
+              }}
+              events={{
+                toggleOrientation: () => {
+                  setOrientation((o) => (o === 'black' ? 'white' : 'black'));
+                  ref.current?.getApi().toggleOrientation();
+                },
+                offerDraw: () => void 0,
+                resign: () => void 0,
+                offerRematch: () => void 0,
+                exit: () => navigate('/'),
+              }}
+              game={{
+                gameOver: state.isGameOver,
+                turn: state.turn === 'w' ? 'white' : 'black',
+              }}
+              players={{
+                white: {
+                  nick: 'TestUser#1236',
+                  online: true,
+                  timeLeft: 65 * 1e3,
+                  lastTurnTs: Date.now(),
+                },
+                black: {
+                  nick: 'TestPlayer#1539',
+                  online: false,
+                  timeLeft: 5 * 1e3,
+                  lastTurnTs: Date.now(),
+                },
+              }}
+            />
           </GridItem>
         </Grid>
       </Center>

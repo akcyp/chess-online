@@ -2,6 +2,8 @@ import { ArrowRightIcon } from '@chakra-ui/icons';
 import { Table, TableContainer, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 
+import { parseGameTimeConfig } from '../helpers/parseGameTimeConfig';
+
 export type GameTableProps = {
   games: {
     id: number;
@@ -28,7 +30,7 @@ export const GamesTable = ({ games }: GameTableProps) => {
             <Tr key={id}>
               <Td>#{id}</Td>
               <Td>{player} </Td>
-              <Td>{time[1] === 0 ? `${time[0]}m` : `${time[0]}m + ${time[1]}s`}</Td>
+              <Td>{parseGameTimeConfig(time)}</Td>
               <Td>
                 <ArrowRightIcon cursor="pointer" onClick={() => navigate(`/game/${id}`)} />
               </Td>
