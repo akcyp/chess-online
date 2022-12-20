@@ -1,4 +1,4 @@
-import { CloseIcon, UpDownIcon } from '@chakra-ui/icons';
+import { CheckIcon, CloseIcon, UpDownIcon } from '@chakra-ui/icons';
 import { Badge, Box, Flex, HStack, IconButton, Tooltip } from '@chakra-ui/react';
 import { useMemo } from 'react';
 import { BsArrowRepeat, BsDiamondHalf, BsDoorClosed } from 'react-icons/bs';
@@ -16,8 +16,10 @@ type GamePanelPlayerProps = {
 
 export type GamePanelProps = {
   events: {
+    askForStart: () => void;
     playAsWhite: () => void;
     playAsBlack: () => void;
+    exitPlay: () => void;
     toggleOrientation: () => void;
     offerDraw: () => void;
     resign: () => void;
@@ -34,6 +36,8 @@ export type GamePanelProps = {
     black: GamePanelPlayerProps | null;
   };
   game: {
+    readyToPlay: boolean;
+    gameStarted: boolean;
     gameOver: boolean;
     turn: null | 'white' | 'black';
     winner: null | 'white' | 'black';
@@ -46,21 +50,31 @@ export const GamePanel = ({ events, config, players, game }: GamePanelProps) => 
   const whitePlayerBox = useMemo(
     () =>
       players.white ? (
-        <PlayerBox nick={players.white.nick} online={players.white.online} />
+        <PlayerBox
+          nick={players.white.nick}
+          online={players.white.online}
+          onExit={events.exitPlay}
+          exitIconVisible={!game.gameStarted || game.gameOver}
+        />
       ) : (
         <PlayerBoxEmpty color="white" onClick={events.playAsWhite} />
       ),
-    [players.white, events.playAsWhite],
+    [players.white, events, game],
   );
 
   const blackPlayerBox = useMemo(
     () =>
       players.black ? (
-        <PlayerBox nick={players.black.nick} online={players.black.online} />
+        <PlayerBox
+          nick={players.black.nick}
+          online={players.black.online}
+          onExit={events.exitPlay}
+          exitIconVisible={!game.gameStarted || game.gameOver}
+        />
       ) : (
         <PlayerBoxEmpty color="black" onClick={events.playAsBlack} />
       ),
-    [players.black, events.playAsBlack],
+    [players.black, events, game],
   );
 
   const whiteTimer = useMemo(
@@ -106,7 +120,18 @@ export const GamePanel = ({ events, config, players, game }: GamePanelProps) => 
           </Box>
         )}
         <HStack justifyContent="center" p={2}>
-          {!game.gameOver ? (
+          {!game.gameStarted ? (
+            <>
+              <Tooltip label="I'm ready">
+                <IconButton
+                  colorScheme={game.readyToPlay ? 'green' : 'gray'}
+                  icon={<CheckIcon />}
+                  aria-label="I'm ready"
+                  onClick={events.askForStart}
+                ></IconButton>
+              </Tooltip>
+            </>
+          ) : !game.gameOver ? (
             <>
               <Tooltip label="Toggle orientation">
                 <IconButton

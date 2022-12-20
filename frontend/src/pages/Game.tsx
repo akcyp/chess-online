@@ -131,8 +131,10 @@ export const GamePage = () => {
                 orientation,
               }}
               events={{
+                askForStart: () => void 0,
                 playAsWhite: () => void 0,
                 playAsBlack: () => void 0,
+                exitPlay: () => void 0,
                 toggleOrientation: () => {
                   setOrientation((o) => (o === 'black' ? 'white' : 'black'));
                   ref.current?.getApi().toggleOrientation();
@@ -143,6 +145,8 @@ export const GamePage = () => {
                 exit: () => navigate('/'),
               }}
               game={{
+                readyToPlay: false,
+                gameStarted: false,
                 gameOver: state.isGameOver,
                 turn: null, // state.isGameOver ? null : state.turn === 'w' ? 'white' : 'black',
                 winner: null,
