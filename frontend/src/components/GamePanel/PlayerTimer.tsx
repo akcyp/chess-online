@@ -28,8 +28,8 @@ export const PlayerTimer = ({ milis, auto = true, lastTurnTs }: PlayerTimerProps
   }, [milis, lastTurnTs, auto]);
 
   return (
-    <Box boxShadow="xl" p={4} bg={panic ? 'red.400' : 'blackAlpha.700'} w={150} color="white" textAlign="center">
-      <Text fontSize="2xl">{parseTimerString(miliseconds, extended)}</Text>
+    <Box boxShadow="xl" p={2} bg={panic ? 'red.400' : 'blackAlpha.700'} w={150} color="white" textAlign="center">
+      <Text fontSize="3xl">{parseTimerString(miliseconds, extended)}</Text>
     </Box>
   );
 };

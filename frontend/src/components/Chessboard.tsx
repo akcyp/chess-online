@@ -11,8 +11,8 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import styled from 'styled-components';
 
 const BoardContainer = styled.div`
-  width: 500px;
-  height: 500px;
+  width: 100%;
+  height: 100%;
   display: table;
 `;
 
@@ -24,7 +24,7 @@ export type ChessboardProps = {
 
 export type ChessboardActions = {
   getApi(): Api;
-  setFen(fen: string): void;
+  setFen(fen: string, options?: { movable?: boolean }): void;
 };
 
 const getMovesFromEngine = (engine: Chess) => {
@@ -52,7 +52,11 @@ export const Chessboard = forwardRef<ChessboardActions, ChessboardProps>(
           }
           return board;
         },
-        setFen(fen: string) {
+        setFen(fen, opts = {}) {
+          const options = {
+            movable: false,
+            ...opts,
+          };
           const chess = new Chess();
           try {
             const loaded = chess.load(fen);
@@ -63,14 +67,19 @@ export const Chessboard = forwardRef<ChessboardActions, ChessboardProps>(
             console.error(err);
             return false;
           }
+          const turnColor = options.movable ? (chess.turn() === 'w' ? 'white' : 'black') : undefined;
           this.getApi().set({
             fen,
             check: chess.isCheck(),
             movable: {
-              color: chess.turn() === 'w' ? 'white' : 'black',
-              dests: getMovesFromEngine(chess),
+              color: turnColor,
+              dests: options.movable ? getMovesFromEngine(chess) : new Map(),
               free: false,
               showDests: true,
+            },
+            turnColor,
+            selectable: {
+              enabled: options.movable,
             },
           });
           return true;
@@ -89,12 +98,16 @@ export const Chessboard = forwardRef<ChessboardActions, ChessboardProps>(
       if (nativeRef.current && !board) {
         const api = Chessground(nativeRef.current, {
           orientation: 'white',
+          disableContextMenu: true,
           animation: { enabled: true, duration: 200 },
           movable: {
-            color: 'white',
+            color: undefined,
             free: false,
             showDests: true,
             dests: new Map(),
+          },
+          selectable: {
+            enabled: false,
           },
           events: {
             move(orig, dest, capturedPiece) {

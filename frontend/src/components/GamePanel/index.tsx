@@ -4,11 +4,20 @@ import { useMemo } from 'react';
 import { BsArrowRepeat, BsDiamondHalf, BsDoorClosed } from 'react-icons/bs';
 
 import { parseGameTimeConfig } from '../../helpers/parseGameTimeConfig';
-import { PlayerBox } from './PlayerBox';
+import { PlayerBox, PlayerBoxEmpty } from './PlayerBox';
 import { PlayerTimer } from './PlayerTimer';
+
+type GamePanelPlayerProps = {
+  nick: string;
+  online: boolean;
+  timeLeft: number;
+  lastTurnTs: number;
+};
 
 export type GamePanelProps = {
   events: {
+    playAsWhite: () => void;
+    playAsBlack: () => void;
     toggleOrientation: () => void;
     offerDraw: () => void;
     resign: () => void;
@@ -21,45 +30,59 @@ export type GamePanelProps = {
     orientation: 'white' | 'black';
   };
   players: {
-    white: {
-      nick: string;
-      online: boolean;
-      timeLeft: number;
-      lastTurnTs: number;
-    };
-    black: {
-      nick: string;
-      online: boolean;
-      timeLeft: number;
-      lastTurnTs: number;
-    };
+    white: GamePanelPlayerProps | null;
+    black: GamePanelPlayerProps | null;
   };
   game: {
-    turn: 'white' | 'black';
     gameOver: boolean;
+    turn: null | 'white' | 'black';
+    winner: null | 'white' | 'black';
   };
 };
 
+const converTimeToTs = (time: number[]) => time[0] * 6e4;
+
 export const GamePanel = ({ events, config, players, game }: GamePanelProps) => {
   const whitePlayerBox = useMemo(
-    () => <PlayerBox nick={players.white.nick} online={players.white.online} />,
-    [players.white],
+    () =>
+      players.white ? (
+        <PlayerBox nick={players.white.nick} online={players.white.online} />
+      ) : (
+        <PlayerBoxEmpty color="white" onClick={events.playAsWhite} />
+      ),
+    [players.white, events.playAsWhite],
   );
+
+  const blackPlayerBox = useMemo(
+    () =>
+      players.black ? (
+        <PlayerBox nick={players.black.nick} online={players.black.online} />
+      ) : (
+        <PlayerBoxEmpty color="black" onClick={events.playAsBlack} />
+      ),
+    [players.black, events.playAsBlack],
+  );
+
   const whiteTimer = useMemo(
     () => (
-      <PlayerTimer milis={players.white.timeLeft} auto={game.turn === 'white'} lastTurnTs={players.white.lastTurnTs} />
+      <PlayerTimer
+        milis={players.white?.timeLeft ?? converTimeToTs(config.time)}
+        auto={players.white !== null && game.turn === 'white'}
+        lastTurnTs={players.white?.lastTurnTs ?? Date.now()}
+      />
     ),
-    [players.white.timeLeft, game.turn],
+    [players.white, game.turn, config],
   );
-  const blackPlayerBox = useMemo(
-    () => <PlayerBox nick={players.black.nick} online={players.black.online} />,
-    [players.black],
-  );
+
   const blackTimer = useMemo(
     () => (
-      <PlayerTimer milis={players.black.timeLeft} auto={game.turn === 'black'} lastTurnTs={players.black.lastTurnTs} />
+      <PlayerTimer
+        milis={players.black?.timeLeft ?? converTimeToTs(config.time)}
+        auto={players.black !== null && game.turn === 'black'}
+        lastTurnTs={players.black?.lastTurnTs ?? Date.now()}
+      />
     ),
-    [players.black.timeLeft, game.turn],
+    [players.black, game.turn, config],
   );
 
   return (
@@ -67,7 +90,7 @@ export const GamePanel = ({ events, config, players, game }: GamePanelProps) => 
       {config.orientation === 'white' ? blackTimer : whiteTimer}
       <Box shadow="xl">
         {config.orientation === 'white' ? blackPlayerBox : whitePlayerBox}
-        <Box textAlign="center">
+        <Box textAlign="center" mt={2}>
           <Badge colorScheme="purple" fontSize="xl">
             Game: #{config.id}
           </Badge>
@@ -75,6 +98,13 @@ export const GamePanel = ({ events, config, players, game }: GamePanelProps) => 
         <Box textAlign="center">
           <Badge colorScheme="purple">{parseGameTimeConfig(config.time)}</Badge>
         </Box>
+        {game.winner && (
+          <Box textAlign="center" mt={2}>
+            <Badge colorScheme="red" fontSize="xl">
+              {game.winner} won!
+            </Badge>
+          </Box>
+        )}
         <HStack justifyContent="center" p={2}>
           {!game.gameOver ? (
             <>

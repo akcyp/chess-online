@@ -6,6 +6,6 @@ export const parseTimerString = (milis: number, extended: boolean, allowNegative
   const seconds = Math.floor((ms / 1e3) % 60);
   const miliseconds = ms % 1e3;
   return extended
-    ? `${sign}${addZero(minutes)}:${addZero(seconds)}.${addZero(miliseconds, 3)}`
+    ? `${sign}${addZero(minutes)}:${addZero(seconds)}.${addZero(Math.floor(miliseconds / 100), 1)}`
     : `${sign}${addZero(minutes)}:${addZero(seconds)}`;
 };
