@@ -11,11 +11,12 @@ import {
 import type { PieceSymbol } from 'chess.js';
 import styled from 'styled-components';
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-const Piece = styled('piece')`
+const Piece = styled('div')`
   width: 100% !important;
   height: 100% !important;
+  position: absolute;
+  top: 0;
+  left: 0;
 `;
 
 export type ChessboardPromotionProps = {
@@ -50,10 +51,10 @@ export const ChessboardPromotion = ({
         <ModalHeader>Select piece to promote</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <HStack className="cg-wrap" justifyContent="center">
+          <HStack className="cg-wrap-extra" justifyContent="center">
             {possiblePromotions.sort().map((piece) => (
               <Button onClick={() => onSelect(piece)} key={piece} size="lg">
-                <Piece className={`${colorClassName} ${getPieceClass(piece)}`} />
+                <Piece className={`piece ${colorClassName} ${getPieceClass(piece)}`} />
               </Button>
             ))}
           </HStack>

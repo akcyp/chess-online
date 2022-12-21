@@ -10,7 +10,7 @@ export const BasicLayout = ({ children }: BasicLayoutProps) => {
   return (
     <>
       <Navbar />
-      <Box padding={6}>{children ? children : <Outlet />}</Box>
+      <Box padding={[2, 6]}>{children ? children : <Outlet />}</Box>
     </>
   );
 };

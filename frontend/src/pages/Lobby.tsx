@@ -15,11 +15,9 @@ export const LobbyPage = () => {
         `"logo"
          "games"
          "stats"`,
-        // Tablet
+        // Tablet & Desktop
         `"games games logo"
          "games games stats"`,
-        // Desktop
-        `"games games games stats logo"`,
       ]}
     >
       <GridItem area="games" w="100%">
@@ -45,6 +43,10 @@ export const LobbyPage = () => {
 };
 
 const GAMES_LIST = [
-  { id: 1, player: 'anonymous123', time: [5, 3] },
-  ...Array.from({ length: 20 }, (_, i) => ({ id: i + 3, player: `testplayer${i}`, time: [10, 3] })),
+  ...Array.from({ length: 20 }, (_, i) => ({
+    id: i + 1,
+    player1: 'testplayer#1234',
+    player2: 'testuser#9876',
+    time: [10, 3],
+  })),
 ];

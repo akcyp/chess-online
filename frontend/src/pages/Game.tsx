@@ -91,9 +91,9 @@ export const GamePage = () => {
   return (
     <>
       <DebugModal data={state} isOpen={isDebugModalOpen} onClose={debugModal.off} />
-      <Center h="80vh">
-        <Grid templateColumns="600px 1fr" columnGap={3} alignItems="center">
-          <GridItem w="600px" h="600px">
+      <Center h="100%">
+        <Grid gridTemplateAreas={[`"board" "panel"`, `"board panel"`]} gap={3} alignItems="center">
+          <GridItem w={[300, 600]} h={[300, 600]} area="board">
             <Chessboard ref={ref} onLoad={onLoad} onMove={onMove}></Chessboard>
             <ChessboardPromotion
               isOpen={promotionPrompt.isOpen}
@@ -123,7 +123,7 @@ export const GamePage = () => {
               }}
             />
           </GridItem>
-          <GridItem w={400}>
+          <GridItem w={[300, 400]} area="panel">
             <GamePanel
               config={{
                 id,
