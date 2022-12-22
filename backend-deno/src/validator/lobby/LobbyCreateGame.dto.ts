@@ -1,8 +1,7 @@
 import 'reflect-metadata';
-import { IsEnum } from 'class-validator';
+import { Equals, IsEnum } from 'class-validator';
 import { Expose } from 'class-transformer';
 
-import { LobbyAction } from './LobbyAction.ts';
 import { createDTOValidator } from '../../utils/createDTOValidator.ts';
 
 const minutesSteps = [
@@ -18,8 +17,8 @@ const incrementSteps = [
 ];
 
 export class CreateGameAction {
-  @IsEnum(['createGame'])
   @Expose()
+  @Equals('createGame')
   type!: 'createGame';
 
   @IsEnum(minutesSteps)
@@ -30,10 +29,5 @@ export class CreateGameAction {
   @Expose()
   increment!: number;
 
-  static validate = createDTOValidator(this, {
-    parseStringToJSON: true,
-    before: async (val, options) => {
-      return await LobbyAction.validate(val, options);
-    },
-  });
+  static validate = createDTOValidator(this);
 }

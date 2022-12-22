@@ -5,10 +5,9 @@ import { Expose } from 'class-transformer';
 import { createDTOValidator } from '../../utils/createDTOValidator.ts';
 
 export class LobbyAction {
-  @IsEnum(['createGame'])
   @Expose()
+  @IsEnum(['createGame'])
   type!: 'createGame';
-  static validate = createDTOValidator(this, {
-    parseStringToJSON: true,
-  });
+
+  static validate = createDTOValidator(this);
 }

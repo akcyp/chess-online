@@ -1,12 +1,12 @@
 import { validate, ValidationError } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 
-type BasicCreateDTOValidatorOptions = {
+export type BasicCreateDTOValidatorOptions = {
   parseStringToJSON: boolean;
   excludeExtraneousValues: boolean;
 };
 
-type CreateDTOValidatorOptions<I> = BasicCreateDTOValidatorOptions & {
+export type CreateDTOValidatorOptions<I> = BasicCreateDTOValidatorOptions & {
   before: (
     plain: unknown,
     options: BasicCreateDTOValidatorOptions,
@@ -18,7 +18,7 @@ type CreateDTOValidatorOptions<I> = BasicCreateDTOValidatorOptions & {
   ) => Promise<DTOValidatorResult<I>>;
 };
 
-type DTOValidatorResult<I> = {
+export type DTOValidatorResult<I> = {
   validationResult: boolean;
   validationErrors: ValidationError[];
   instance: I;

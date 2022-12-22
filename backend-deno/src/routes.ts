@@ -1,6 +1,12 @@
-import { Router } from 'oak';
-import { generateUsername } from './utils/generateUsername.ts';
 import type { AppState } from './server.ts';
+import { Router } from 'oak';
+
+import { logger } from './logger.ts';
+import { generateUsername } from './utils/generateUsername.ts';
+import {
+  gamePayloadValidator,
+  lobbyPayloadValidator,
+} from './validator/validator.ts';
 
 export const router = new Router<AppState>();
 router.use((ctx, next) => {
@@ -15,13 +21,37 @@ router.use((ctx, next) => {
 });
 
 router.get('/ws/lobby', (ctx) => {
-  const username = ctx.state.session.get('username');
-  if (!ctx.state.session.has('pageCount')) {
-    ctx.state.session.set('pageCount', 0);
+  if (!ctx.isUpgradable) {
+    ctx.throw(501);
+    return;
   }
-  const n = ctx.state.session.get('pageCount') as number;
-  ctx.state.session.set('pageCount', n + 1);
-  ctx.response.body = `Visited page ${n} times, your username = ${username}`;
+  const uuid = ctx.state.session.get('userUUID') as string;
+  const ws = ctx.upgrade();
+  ws.addEventListener('open', () => {
+    logger.info(`User ${uuid} connected to lobby`);
+  });
+  ws.addEventListener('close', () => {
+    logger.info(`User ${uuid} disconnected from lobby`);
+  });
+  ws.addEventListener('message', async (e) => {
+    logger.info(`User ${uuid} sent message to lobby: ${e.data}`);
+    const validationResult = await lobbyPayloadValidator(e.data);
+    if (validationResult instanceof Error) {
+      ws.send(JSON.stringify({ error: validationResult.message }));
+      return;
+    }
+    const { type, instance } = validationResult;
+    switch (type) {
+      case 'createGame': {
+        const { minutes, increment } = instance;
+        logger.warn(`User: ${uuid} is creating game with following config`, {
+          minutes,
+          increment,
+        });
+        break;
+      }
+    }
+  });
 });
 
 router.get('/ws/game/:id', (ctx) => {
@@ -37,7 +67,39 @@ router.get('/ws/game/:id', (ctx) => {
   ws.addEventListener('close', () => {
     console.log(`User ${uuid} disconnected`);
   });
-  ws.addEventListener('message', (e) => {
+  ws.addEventListener('message', async (e) => {
     console.log(`User ${uuid} sent message: ${e.data}`);
+    const validationResult = await gamePayloadValidator(e.data);
+    if (validationResult instanceof Error) {
+      ws.send(JSON.stringify({ error: validationResult.message }));
+      return;
+    }
+    const { type, instance } = validationResult;
+    switch (type) {
+      case 'play': {
+        logger.warn(`User: ${uuid} is trying to play as ${instance.color}`);
+        break;
+      }
+      case 'move': {
+        logger.warn(
+          `User: ${uuid} is trying to move from ${instance.from} to ${instance.to} ${
+            instance.promotion ? `with promotion ${instance.promotion}` : ''
+          }`,
+        );
+        break;
+      }
+      case 'offerdraw': {
+        logger.warn(`User: ${uuid} is trying to offer draw`);
+        break;
+      }
+      case 'rematch': {
+        logger.warn(`User: ${uuid} is trying to rematch`);
+        break;
+      }
+      case 'resign': {
+        logger.warn(`User: ${uuid} is trying to resign`);
+        break;
+      }
+    }
   });
 });
