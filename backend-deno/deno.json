@@ -1,0 +1,11 @@
+{
+  "importMap": "import_map.json",
+  "tasks": {
+    "dev": "deno run --allow-net --allow-read --watch main.ts"
+  },
+  "fmt": {
+    "options": {
+      "singleQuote": true
+    }
+  }
+}

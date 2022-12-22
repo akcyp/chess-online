@@ -1,0 +1,3 @@
+Deno.bench(function addSmall() {
+  // ...
+});
