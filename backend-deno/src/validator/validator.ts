@@ -1,7 +1,7 @@
 import { combineDTOValidators } from '../utils/combineDTOValidators.ts';
 
 import { LobbyAction } from './lobby/Lobby.dto.ts';
-import { CreateGameAction } from './lobbyActions/LobbyCreateGameAction.ts';
+import { CreateGameAction } from './lobby/LobbyCreateGame.dto.ts';
 
 import { GameAction } from './game/Game.dto.ts';
 import { GamePlayAction } from './game/GamePlay.dto.ts';
