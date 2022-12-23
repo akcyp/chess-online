@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Equals, IsEnum } from 'class-validator';
+import { Equals, IsBoolean, IsEnum } from 'class-validator';
 import { Expose } from 'class-transformer';
 
 import { createDTOValidator } from '../../utils/createDTOValidator.ts';
@@ -28,6 +28,10 @@ export class CreateGameAction {
   @IsEnum(incrementSteps)
   @Expose()
   increment!: number;
+
+  @Expose()
+  @IsBoolean()
+  private!: boolean;
 
   static validate = createDTOValidator(this);
 }

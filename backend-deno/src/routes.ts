@@ -1,5 +1,5 @@
 import type { AppState } from './server.ts';
-import { Router } from 'oak';
+import { isHttpError, Router, Status } from 'oak';
 
 import { logger } from './logger.ts';
 import { generateUsername } from './utils/generateUsername.ts';
@@ -9,6 +9,28 @@ import {
 } from './validator/validator.ts';
 
 export const router = new Router<AppState>();
+
+router.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    if (isHttpError(err)) {
+      switch (err.status) {
+        case Status.NotFound:
+          ctx.response.status = 404;
+          break;
+        case Status.NotImplemented:
+          ctx.response.status = 501;
+          break;
+        default:
+          logger.error(err.message);
+      }
+    } else {
+      throw err;
+    }
+  }
+});
+
 router.use((ctx, next) => {
   ctx.response.headers.set('Access-Control-Allow-Origin', '*');
   if (!ctx.state.session.has('userUUID')) {
@@ -43,11 +65,10 @@ router.get('/ws/lobby', (ctx) => {
     const { type, instance } = validationResult;
     switch (type) {
       case 'createGame': {
-        const { minutes, increment } = instance;
-        logger.warn(`User: ${uuid} is creating game with following config`, {
-          minutes,
-          increment,
-        });
+        logger.warn(
+          `User: ${uuid} is creating game with following config`,
+          instance,
+        );
         break;
       }
     }
