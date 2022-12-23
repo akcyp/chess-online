@@ -37,13 +37,11 @@ export const useWSCachedMessage = <T extends WSReceivedMessage['type'], R = WSRe
 export const WebsocketProvider = ({ children }: { children: JSX.Element | JSX.Element[] }) => {
   const location = useLocation();
 
-  const socketNamespace = useMemo<'lobby' | `game/${number}`>(() => {
-    const regResult = /^\/game\/(?<id>\d+)$/.exec(location.pathname);
+  const socketNamespace = useMemo<'lobby' | `game/${string}`>(() => {
+    const regResult = /^\/game\/(?<id>[A-Za-z\d]+)$/.exec(location.pathname);
     if (regResult !== null) {
-      const id = Number(regResult.groups?.id);
-      if (!isNaN(id)) {
-        return `game/${id}`;
-      }
+      const id = regResult.groups?.id;
+      return `game/${id}`;
     }
     return 'lobby';
   }, [location]);

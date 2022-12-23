@@ -9,10 +9,11 @@ import { LoaderFunctionArgs, useLoaderData, useNavigate } from 'react-router-dom
 
 import { useKeyboard } from '../hooks/useKeyboard';
 
+const API_URL = 'localhost:3000';
 export const loader = async ({ params }: LoaderFunctionArgs) => {
-  const id = params['id'] || '';
-  console.log(id); // validate
-  return { id };
+  const { id = '' } = params;
+  const response = (await fetch(`http://${API_URL}/api/game/${id}`).then((res) => res.json())) as { id: string };
+  return { id: response.id };
 };
 
 export const GamePage = () => {
