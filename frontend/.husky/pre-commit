@@ -3,3 +3,8 @@
 
 cd frontend
 pnpm run pre-commit
+cd ..
+
+cd backend-deno
+deno fmt
+cd ..
