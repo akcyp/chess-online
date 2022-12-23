@@ -62,13 +62,13 @@ router.get('/ws/game/:id', (ctx) => {
   const uuid = ctx.state.session.get('userUUID') as string;
   const ws = ctx.upgrade();
   ws.addEventListener('open', () => {
-    console.log(`User ${uuid} connected`);
+    logger.info(`User ${uuid} connected`);
   });
   ws.addEventListener('close', () => {
-    console.log(`User ${uuid} disconnected`);
+    logger.info(`User ${uuid} disconnected`);
   });
   ws.addEventListener('message', async (e) => {
-    console.log(`User ${uuid} sent message: ${e.data}`);
+    logger.info(`User ${uuid} sent message: ${e.data}`);
     const validationResult = await gamePayloadValidator(e.data);
     if (validationResult instanceof Error) {
       ws.send(JSON.stringify({ error: validationResult.message }));
@@ -78,6 +78,14 @@ router.get('/ws/game/:id', (ctx) => {
     switch (type) {
       case 'play': {
         logger.warn(`User: ${uuid} is trying to play as ${instance.color}`);
+        break;
+      }
+      case 'ready': {
+        logger.warn(
+          `User: ${uuid} is saying that is ${
+            instance.ready ? 'ready' : 'not ready'
+          }`,
+        );
         break;
       }
       case 'move': {

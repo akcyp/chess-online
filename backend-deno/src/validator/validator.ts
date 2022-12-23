@@ -9,6 +9,7 @@ import { GameMoveAction } from './game/GameMove.dto.ts';
 import { GameOfferDrawAction } from './game/GameOfferDraw.dto.ts';
 import { GameResignAction } from './game/GameResign.dto.ts';
 import { GameRematchAction } from './game/GameRematch.dto.ts';
+import { GameReadyAction } from './game/GameReady.dto.ts';
 
 export const lobbyPayloadValidator = combineDTOValidators(LobbyAction, {
   createGame: CreateGameAction,
@@ -16,6 +17,7 @@ export const lobbyPayloadValidator = combineDTOValidators(LobbyAction, {
 
 export const gamePayloadValidator = combineDTOValidators(GameAction, {
   play: GamePlayAction,
+  ready: GameReadyAction,
   move: GameMoveAction,
   offerdraw: GameOfferDrawAction,
   resign: GameResignAction,

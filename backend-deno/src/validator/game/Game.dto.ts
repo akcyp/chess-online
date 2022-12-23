@@ -6,6 +6,7 @@ import { createDTOValidator } from '../../utils/createDTOValidator.ts';
 
 const actions = [
   'play',
+  'ready',
   'move',
   'offerdraw',
   'resign',
