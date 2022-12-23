@@ -11,7 +11,9 @@ import {
   Text,
   VStack,
 } from '@chakra-ui/react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useWebsocketContext, useWSCachedMessage } from 'src/contexts/WebsocketContext';
 
 const fractionLetters = ['¼', '½', '¾', '1', '1¼', '1½', '1¾'];
 
@@ -32,12 +34,35 @@ export type CreateGameProps = {
 };
 
 export const CreateGamePage = ({ type }: CreateGameProps) => {
-  const [minutesPerSideStep, setMinutesPerSideStep] = useState(10);
-  const [incrementStep, setIncrementStep] = useState(0);
+  const navigate = useNavigate();
+  const { send } = useWebsocketContext();
+  const gameCreatedEvent = useWSCachedMessage('gameCreated');
+
+  const [pendingRequest, setPendingRequest] = useState(false);
 
   const onCreate = useCallback(() => {
-    console.log('Request for create');
+    setPendingRequest(true);
+    send({
+      type: 'createGame',
+      minutes: minutesPerSideStep,
+      increment: incrementStep,
+      private: type === 'private',
+    });
   }, []);
+
+  useEffect(() => {
+    if (gameCreatedEvent) {
+      if (gameCreatedEvent.error) {
+        window.alert(gameCreatedEvent.error);
+        setPendingRequest(false);
+      } else if (gameCreatedEvent.id) {
+        navigate(`/game/${gameCreatedEvent.id}`);
+      }
+    }
+  }, [gameCreatedEvent]);
+
+  const [minutesPerSideStep, setMinutesPerSideStep] = useState(10);
+  const [incrementStep, setIncrementStep] = useState(0);
 
   return (
     <Center h="70vh">
@@ -85,7 +110,7 @@ export const CreateGamePage = ({ type }: CreateGameProps) => {
           </FormControl>
         </Box>
         <Box pb={2}>
-          <Button colorScheme="green" onClick={onCreate}>
+          <Button colorScheme="green" onClick={onCreate} disabled={pendingRequest}>
             Play!
           </Button>
         </Box>

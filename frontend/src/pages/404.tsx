@@ -1,5 +1,5 @@
 import { Center } from '@chakra-ui/react';
-import { BasicLayout } from 'src/layouts/Basic/BasicLayout';
+import { BasicLayout } from 'src/layouts/BasicLayout';
 import styled from 'styled-components';
 
 const Fancy404Text = styled.div`

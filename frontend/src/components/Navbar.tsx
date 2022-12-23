@@ -1,10 +1,14 @@
 import { ChevronDownIcon, ChevronRightIcon, CloseIcon, HamburgerIcon } from '@chakra-ui/icons';
 import {
   Box,
+  Circle,
   Collapse,
   Flex,
+  Hide,
+  HStack,
   Icon,
   IconButton,
+  Image,
   Link,
   Popover,
   PopoverContent,
@@ -19,10 +23,10 @@ import { Link as RLink } from 'react-router-dom';
 import Logo from '../assets/chess_logo_text.png';
 
 const RenderLogo = () => (
-  <img src={Logo} style={{ width: '72px', transform: 'scale(2) translate(12px, 0px)' }} alt="PF Chess" />
+  <Image src={Logo} w="72px" transform={['scale(2)', 'scale(2) translate(12px, 0px)']} alt="PF Chess" />
 );
 
-export const Navbar = () => {
+export const Navbar = ({ statusColor }: { statusColor: string }) => {
   const { isOpen, onToggle } = useDisclosure();
   return (
     <Box>
@@ -36,8 +40,9 @@ export const Navbar = () => {
         borderStyle={'solid'}
         borderColor={useColorModeValue('gray.200', 'gray.900')}
         align={'center'}
+        justifyContent="space-between"
       >
-        <Flex flex={{ base: 1, md: 'auto' }} ml={{ base: -2 }} display={{ base: 'flex', md: 'none' }}>
+        <Flex ml={{ base: -2 }} display={{ base: 'flex', md: 'none' }}>
           <IconButton
             onClick={onToggle}
             icon={isOpen ? <CloseIcon w={3} h={3} /> : <HamburgerIcon w={5} h={5} />}
@@ -45,12 +50,18 @@ export const Navbar = () => {
             aria-label={'Toggle Navigation'}
           />
         </Flex>
-        <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
+        <Flex justify={{ base: 'center', md: 'start' }}>
           <RenderLogo />
           <Flex display={{ base: 'none', md: 'flex' }} ml={20}>
             <DesktopNav />
           </Flex>
         </Flex>
+        <HStack>
+          <Hide below="md">
+            <Text fontSize="14px">Server status:</Text>
+          </Hide>
+          <Circle size="14px" bg={statusColor} />
+        </HStack>
       </Flex>
 
       <Collapse in={isOpen} animateOpacity>

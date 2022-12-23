@@ -3,8 +3,12 @@ import { GamesTable } from '@components/GamesTable';
 import { Link } from 'react-router-dom';
 
 import Logo from '../assets/chess_logo.png';
+import { useWSCachedMessage } from '../contexts/WebsocketContext';
 
 export const LobbyPage = () => {
+  const games = useWSCachedMessage('updateGames')?.games || [];
+  const playersCount = useWSCachedMessage('updatePlayers')?.count || 0;
+
   return (
     <Grid
       h="80vh"
@@ -22,12 +26,12 @@ export const LobbyPage = () => {
     >
       <GridItem area="games" w="100%">
         <Box h="80vh">
-          <GamesTable games={GAMES_LIST} />
+          <GamesTable games={games} />
         </Box>
       </GridItem>
       <GridItem area="stats">
-        <Box>Players online: 0</Box>
-        <Box>Games: {GAMES_LIST.length}</Box>
+        <Box>Players online: {playersCount}</Box>
+        <Box>Games: {games.length}</Box>
       </GridItem>
       <GridItem area="logo" w={['300px', '200px']}>
         <Image src={Logo} alt="PF Chess" />
@@ -41,12 +45,3 @@ export const LobbyPage = () => {
     </Grid>
   );
 };
-
-const GAMES_LIST = [
-  ...Array.from({ length: 20 }, (_, i) => ({
-    id: i + 1,
-    player1: 'testplayer#1234',
-    player2: 'testuser#9876',
-    time: [10, 3],
-  })),
-];

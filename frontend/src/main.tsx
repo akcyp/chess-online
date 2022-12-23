@@ -5,7 +5,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-import { BasicLayout } from './layouts/Basic/BasicLayout';
+import { WebsocketProvider } from './contexts/WebsocketContext';
+import { BasicLayout } from './layouts/BasicLayout';
 import { NotFoundPage } from './pages/404';
 import { AboutPage } from './pages/About';
 import { CreateGamePage } from './pages/CreateGame';
@@ -15,7 +16,11 @@ import { LobbyPage } from './pages/Lobby';
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <BasicLayout />,
+    element: (
+      <WebsocketProvider>
+        <BasicLayout />
+      </WebsocketProvider>
+    ),
     children: [
       {
         path: '/',
