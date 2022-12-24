@@ -12,6 +12,7 @@ type GamePanelPlayerProps = {
   online: boolean;
   timeLeft: number;
   lastTurnTs: number;
+  isYou: boolean;
 };
 
 export type GamePanelProps = {
@@ -54,7 +55,7 @@ export const GamePanel = ({ events, config, players, game }: GamePanelProps) => 
           nick={players.white.nick}
           online={players.white.online}
           onExit={events.exitPlay}
-          exitIconVisible={!game.gameStarted || game.gameOver}
+          exitIconVisible={players.white.isYou && (!game.gameStarted || game.gameOver)}
         />
       ) : (
         <PlayerBoxEmpty color="white" onClick={events.playAsWhite} />
@@ -69,7 +70,7 @@ export const GamePanel = ({ events, config, players, game }: GamePanelProps) => 
           nick={players.black.nick}
           online={players.black.online}
           onExit={events.exitPlay}
-          exitIconVisible={!game.gameStarted || game.gameOver}
+          exitIconVisible={players.black.isYou && (!game.gameStarted || game.gameOver)}
         />
       ) : (
         <PlayerBoxEmpty color="black" onClick={events.playAsBlack} />

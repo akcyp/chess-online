@@ -46,11 +46,62 @@ export const GamePage = () => {
     Escape: () => debugModal.toggle(),
   });
 
+  type PlayerState = {
+    nick: string;
+    online: boolean;
+    timeLeft: number;
+    lastTurnTs: number;
+    isYou: boolean;
+  };
+  const [players, setPlayers] = useState<{
+    white: PlayerState | null;
+    black: PlayerState | null;
+  }>({
+    white: null,
+    black: null,
+  });
+
+  const [timeControl, setTimeControl] = useState([0, 0]);
+  const [gameState, setGameState] = useState<{
+    readyToPlay: boolean;
+    gameStarted: boolean;
+    gameOver: boolean;
+    turn: 'white' | 'black' | null;
+    winner: 'white' | 'black' | null;
+  }>({
+    readyToPlay: false,
+    gameStarted: false,
+    gameOver: false,
+    turn: null,
+    winner: null,
+  });
+
   useEffect(() => {
     if (lastMessage === null) return;
-    // switch (lastMessage.type) {
-    // };
+    switch (lastMessage.type) {
+      case 'updateGameState': {
+        setTimeControl([lastMessage.timeControl.minutes, lastMessage.timeControl.increment]);
+        setFen(lastMessage.fen);
+        setGameState({
+          readyToPlay: lastMessage.readyToPlay,
+          gameStarted: lastMessage.gameStarted,
+          gameOver: lastMessage.gameOver,
+          turn: lastMessage.turn,
+          winner: lastMessage.winner,
+        });
+        break;
+      }
+      case 'players': {
+        setPlayers({
+          white: lastMessage.white,
+          black: lastMessage.black,
+        });
+        break;
+      }
+    }
   }, [lastMessage]);
+
+  const playAs = players.black?.isYou ? 'black' : 'white';
 
   return (
     <>
@@ -75,7 +126,7 @@ export const GamePage = () => {
                 }
               }}
               orientation="white"
-              playAs="white"
+              playAs={playAs}
             />
             <ChessboardPromotion
               isOpen={promotionPrompt.isOpen}
@@ -97,7 +148,7 @@ export const GamePage = () => {
             <GamePanel
               config={{
                 id,
-                time: [5, 3],
+                time: timeControl,
                 orientation,
               }}
               events={{
@@ -113,22 +164,8 @@ export const GamePage = () => {
                 offerRematch: () => send({ type: 'rematch' }),
                 exit: () => navigate('/'),
               }}
-              game={{
-                readyToPlay: false,
-                gameStarted: false,
-                gameOver: false,
-                turn: null,
-                winner: null,
-              }}
-              players={{
-                white: {
-                  nick: 'TestUser#1236',
-                  online: true,
-                  timeLeft: 65 * 1e3,
-                  lastTurnTs: Date.now(),
-                },
-                black: null,
-              }}
+              game={gameState}
+              players={players}
             />
           </GridItem>
         </Grid>

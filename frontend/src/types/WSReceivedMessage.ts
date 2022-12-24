@@ -1,4 +1,4 @@
-export type WSReceivedMessage =
+export type WSReceivedLobbyMessage =
   | {
       type: 'updateGames';
       games: {
@@ -17,3 +17,37 @@ export type WSReceivedMessage =
       id?: string;
       error?: string;
     };
+
+export type WSReceivedGameMessage =
+  | {
+      type: 'players';
+      white: null | {
+        nick: string;
+        online: boolean;
+        timeLeft: number;
+        lastTurnTs: number;
+        isYou: boolean;
+      };
+      black: null | {
+        nick: string;
+        online: boolean;
+        timeLeft: number;
+        lastTurnTs: number;
+        isYou: boolean;
+      };
+    }
+  | {
+      type: 'updateGameState';
+      fen: string;
+      timeControl: {
+        minutes: number;
+        increment: number;
+      };
+      readyToPlay: boolean;
+      gameStarted: boolean;
+      gameOver: boolean;
+      turn: 'white' | 'black' | null;
+      winner: 'white' | 'black' | null;
+    };
+
+export type WSReceivedMessage = WSReceivedLobbyMessage | WSReceivedGameMessage;
