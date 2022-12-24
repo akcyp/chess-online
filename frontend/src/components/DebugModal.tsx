@@ -1,6 +1,23 @@
 import { Modal, ModalBody, ModalCloseButton, ModalContent, ModalHeader, ModalOverlay } from '@chakra-ui/react';
+import type { Chess } from 'chess.js';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { monokai } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+
+export const getEngineState = (fen: string, engine: Chess) => {
+  return {
+    fen,
+    history: engine.history().join(' '),
+    turn: engine.turn(),
+    isCheck: engine.isCheck(),
+    inCheck: engine.inCheck(),
+    isCheckmate: engine.isCheckmate(),
+    isStalemate: engine.isStalemate(),
+    isInsufficientMaterial: engine.isInsufficientMaterial(),
+    isThreefoldRepetition: engine.isThreefoldRepetition(),
+    isDraw: engine.isDraw(),
+    isGameOver: engine.isGameOver(),
+  };
+};
 
 export type DebugModalProps = {
   data: unknown;

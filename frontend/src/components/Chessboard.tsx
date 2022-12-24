@@ -19,6 +19,7 @@ const BoardContainer = styled.div`
 export type ChessboardProps = {
   onLoad?: (api: Api) => void;
   orientation?: 'white' | 'black';
+  playAs: 'white' | 'black';
   onMove?: (from: Key, to: Key, capturedPiece?: Piece) => void;
 };
 
@@ -39,7 +40,7 @@ const getMovesFromEngine = (engine: Chess) => {
 };
 
 export const Chessboard = forwardRef<ChessboardActions, ChessboardProps>(
-  ({ onLoad = () => void 0, onMove = () => void 0 }, ref) => {
+  ({ onLoad = () => void 0, onMove = () => void 0, playAs, orientation }, ref) => {
     const nativeRef = useRef<HTMLDivElement>(null);
     const [board, setBoard] = useState<Api | null>(null);
 
@@ -67,17 +68,16 @@ export const Chessboard = forwardRef<ChessboardActions, ChessboardProps>(
             console.error(err);
             return false;
           }
-          const turnColor = options.movable ? (chess.turn() === 'w' ? 'white' : 'black') : undefined;
           this.getApi().set({
             fen,
             check: chess.isCheck(),
             movable: {
-              color: turnColor,
+              color: options.movable ? (chess.turn() === 'w' ? 'white' : 'black') : undefined,
               dests: options.movable ? getMovesFromEngine(chess) : new Map(),
               free: false,
               showDests: true,
             },
-            turnColor,
+            turnColor: playAs,
             selectable: {
               enabled: options.movable,
             },
@@ -95,9 +95,13 @@ export const Chessboard = forwardRef<ChessboardActions, ChessboardProps>(
     }, [board]);
 
     useEffect(() => {
+      board?.toggleOrientation();
+    }, [orientation]);
+
+    useEffect(() => {
       if (nativeRef.current && !board) {
         const api = Chessground(nativeRef.current, {
-          orientation: 'white',
+          orientation,
           disableContextMenu: true,
           animation: { enabled: true, duration: 200 },
           movable: {

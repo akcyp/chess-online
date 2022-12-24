@@ -7,5 +7,24 @@ export type WSSendMessage =
     }
   | {
       type: 'play';
-      color: 'white' | 'black';
+      color: 'white' | 'black' | 'exit';
+    }
+  | {
+      type: 'move';
+      from: string;
+      to: string;
+      promotion?: string;
+    }
+  | {
+      type: 'ready';
+      ready: boolean;
+    }
+  | {
+      type: 'rematch';
+    }
+  | {
+      type: 'offerdraw';
+    }
+  | {
+      type: 'resign';
     };

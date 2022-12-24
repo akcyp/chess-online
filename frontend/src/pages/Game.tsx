@@ -1,12 +1,14 @@
 import { Center, Grid, GridItem, useBoolean } from '@chakra-ui/react';
 import { Chessboard, ChessboardActions } from '@components/Chessboard';
-import { ChessboardPromotion } from '@components/ChessboardPromotion';
-import { DebugModal } from '@components/DebugModal';
+import { ChessboardPromotion, ChessboardPromotionReducer } from '@components/ChessboardPromotion';
+import { DebugModal, getEngineState } from '@components/DebugModal';
 import { GamePanel } from '@components/GamePanel';
-import { Chess, Move, PieceSymbol } from 'chess.js';
-import { useCallback, useRef, useState } from 'react';
+import { Chess } from 'chess.js';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { LoaderFunctionArgs, useLoaderData, useNavigate } from 'react-router-dom';
+import { findPromotionMoves } from 'src/helpers/findPromotionMoves';
 
+import { useWebsocketContext } from '../contexts/WebsocketContext';
 import { useKeyboard } from '../hooks/useKeyboard';
 
 const API_URL = 'localhost:3000';
@@ -19,108 +21,75 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 export const GamePage = () => {
   const { id } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const navigate = useNavigate();
+  const { send, lastMessage } = useWebsocketContext();
+  const ref = useRef<ChessboardActions>(null);
 
   const [engine] = useState(new Chess());
   const [fen, setFen] = useState(engine.fen());
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
   const [isDebugModalOpen, debugModal] = useBoolean(false);
-  const [promotionPrompt, setPromotionPrompt] = useState({
-    possiblePieces: [] as PieceSymbol[],
+  const [promotionPrompt, dispatchPromotionPromptAction] = useReducer(ChessboardPromotionReducer, {
     isOpen: false,
-    from: null as string | null,
-    to: null as string | null,
-    color: 'w' as null | 'w' | 'b',
   });
 
-  const ref = useRef<ChessboardActions>(null);
-
-  const onLoad = useCallback(() => {
-    console.log(ref.current);
-    ref.current?.setFen(engine.fen());
-  }, [ref, engine]);
-
   const performMove = useCallback(
-    ({ from, to, promotion }: { from: string; to: string; promotion?: string }) => {
-      engine.move({ from, to, promotion });
-      ref.current?.setFen(engine.fen(), { movable: true });
-      setFen(engine.fen());
+    (moveData: { from: string; to: string; promotion?: string }) => {
+      send({
+        type: 'move',
+        ...moveData,
+      });
     },
-    [ref, engine],
-  );
-
-  const onMove = useCallback(
-    (from: string, to: string) => {
-      const possibleMoves = engine.moves({ verbose: true }) as Move[];
-      const possiblePromotionMoves = possibleMoves
-        .filter((move) => move.from === from && move.to === to)
-        .filter((move) => move.flags.includes('p') && ['n', 'r', 'q', 'b'].includes(move.promotion ?? ''));
-      const possiblePromotions = possiblePromotionMoves.map((move) => move.promotion) as PieceSymbol[];
-
-      if (possiblePromotions.length > 0) {
-        setPromotionPrompt({
-          isOpen: true,
-          possiblePieces: possiblePromotions,
-          from,
-          to,
-          color: possiblePromotionMoves[0].color,
-        });
-      } else {
-        performMove({ from, to });
-      }
-    },
-    [ref, engine],
+    [ref, engine, send],
   );
 
   useKeyboard({
     Escape: () => debugModal.toggle(),
   });
 
-  const state = {
-    fen,
-    history: engine.history().join(' '),
-    turn: engine.turn(),
-    isCheck: engine.isCheck(),
-    inCheck: engine.inCheck(),
-    isCheckmate: engine.isCheckmate(),
-    isStalemate: engine.isStalemate(),
-    isInsufficientMaterial: engine.isInsufficientMaterial(),
-    isThreefoldRepetition: engine.isThreefoldRepetition(),
-    isDraw: engine.isDraw(),
-    isGameOver: engine.isGameOver(),
-  };
+  useEffect(() => {
+    if (lastMessage === null) return;
+    // switch (lastMessage.type) {
+    // };
+  }, [lastMessage]);
 
   return (
     <>
-      <DebugModal data={state} isOpen={isDebugModalOpen} onClose={debugModal.off} />
+      <DebugModal data={getEngineState(fen, engine)} isOpen={isDebugModalOpen} onClose={debugModal.off} />
       <Center h="100%">
         <Grid gridTemplateAreas={[`"board" "panel"`, `"board panel"`]} gap={3} alignItems="center">
           <GridItem w={[300, 600]} h={[300, 600]} area="board">
-            <Chessboard ref={ref} onLoad={onLoad} onMove={onMove}></Chessboard>
+            <Chessboard
+              ref={ref}
+              onLoad={() => {
+                ref.current?.setFen(fen);
+              }}
+              onMove={(from, to) => {
+                const promotions = findPromotionMoves(engine, from, to);
+                if (promotions.possiblePromotions.length > 0) {
+                  dispatchPromotionPromptAction({
+                    type: 'create',
+                    ...promotions,
+                  });
+                } else {
+                  performMove({ from, to });
+                }
+              }}
+              orientation="white"
+              playAs="white"
+            />
             <ChessboardPromotion
               isOpen={promotionPrompt.isOpen}
               color={promotionPrompt.color}
-              possiblePromotions={promotionPrompt.possiblePieces}
+              possiblePromotions={promotionPrompt.possiblePromotions}
               onSelect={(selected) => {
-                if (promotionPrompt.from !== null && promotionPrompt.to !== null) {
+                if (promotionPrompt.from && promotionPrompt.to) {
                   performMove({ from: promotionPrompt.from, to: promotionPrompt.to, promotion: selected });
                 }
-                setPromotionPrompt({
-                  possiblePieces: [],
-                  isOpen: false,
-                  from: null,
-                  to: null,
-                  color: null,
-                });
+                dispatchPromotionPromptAction({ type: 'reset' });
               }}
               onAbort={() => {
                 ref.current?.setFen(engine.fen(), { movable: true });
-                setPromotionPrompt({
-                  possiblePieces: [],
-                  isOpen: false,
-                  from: null,
-                  to: null,
-                  color: null,
-                });
+                dispatchPromotionPromptAction({ type: 'reset' });
               }}
             />
           </GridItem>
@@ -132,24 +101,23 @@ export const GamePage = () => {
                 orientation,
               }}
               events={{
-                askForStart: () => void 0,
-                playAsWhite: () => void 0,
-                playAsBlack: () => void 0,
-                exitPlay: () => void 0,
+                askForStart: () => send({ type: 'ready', ready: true }),
+                playAsWhite: () => send({ type: 'play', color: 'white' }),
+                playAsBlack: () => send({ type: 'play', color: 'black' }),
+                exitPlay: () => send({ type: 'play', color: 'exit' }),
                 toggleOrientation: () => {
                   setOrientation((o) => (o === 'black' ? 'white' : 'black'));
-                  ref.current?.getApi().toggleOrientation();
                 },
-                offerDraw: () => void 0,
-                resign: () => void 0,
-                offerRematch: () => void 0,
+                offerDraw: () => send({ type: 'offerdraw' }),
+                resign: () => send({ type: 'resign' }),
+                offerRematch: () => send({ type: 'rematch' }),
                 exit: () => navigate('/'),
               }}
               game={{
                 readyToPlay: false,
                 gameStarted: false,
-                gameOver: state.isGameOver,
-                turn: null, // state.isGameOver ? null : state.turn === 'w' ? 'white' : 'black',
+                gameOver: false,
+                turn: null,
                 winner: null,
               }}
               players={{
@@ -159,12 +127,6 @@ export const GamePage = () => {
                   timeLeft: 65 * 1e3,
                   lastTurnTs: Date.now(),
                 },
-                // black: {
-                //   nick: 'TestPlayer#1539',
-                //   online: false,
-                //   timeLeft: 5 * 1e3,
-                //   lastTurnTs: Date.now(),
-                // },
                 black: null,
               }}
             />

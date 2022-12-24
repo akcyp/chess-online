@@ -11,6 +11,55 @@ import {
 import type { PieceSymbol } from 'chess.js';
 import styled from 'styled-components';
 
+export type ChessboardPromotionState = {
+  isOpen: boolean;
+  color?: 'white' | 'black';
+  from?: string;
+  to?: string;
+  possiblePromotions?: PieceSymbol[];
+};
+
+export type ChessboardPromotionAction =
+  | {
+      type: 'reset';
+    }
+  | {
+      type: 'create';
+      color: 'white' | 'black';
+      from: string;
+      to: string;
+      possiblePromotions: PieceSymbol[];
+    };
+
+export const ChessboardPromotionReducer = (
+  state: ChessboardPromotionState,
+  action: ChessboardPromotionAction,
+): ChessboardPromotionState => {
+  switch (action.type) {
+    case 'reset': {
+      return {
+        isOpen: false,
+      };
+    }
+    case 'create': {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { type, ...rest } = action;
+      return {
+        isOpen: true,
+        ...rest,
+      };
+    }
+  }
+};
+
+export type ChessboardPromotionProps = {
+  isOpen: boolean;
+  possiblePromotions?: PieceSymbol[];
+  color?: 'white' | 'black';
+  onSelect: (selected: PieceSymbol) => void;
+  onAbort: () => void;
+};
+
 const Piece = styled('div')`
   width: 100% !important;
   height: 100% !important;
@@ -19,22 +68,13 @@ const Piece = styled('div')`
   left: 0;
 `;
 
-export type ChessboardPromotionProps = {
-  possiblePromotions: PieceSymbol[];
-  color: null | 'w' | 'b';
-  isOpen: boolean;
-  onSelect: (selected: PieceSymbol) => void;
-  onAbort: () => void;
-};
-
 export const ChessboardPromotion = ({
-  possiblePromotions,
-  color,
+  possiblePromotions = [],
+  color = 'white',
   isOpen,
   onSelect,
   onAbort,
 }: ChessboardPromotionProps) => {
-  const colorClassName = color === 'w' ? 'white' : 'black';
   const getPieceClass = (piece: PieceSymbol) =>
     ({
       q: 'queen',
@@ -54,7 +94,7 @@ export const ChessboardPromotion = ({
           <HStack className="cg-wrap-extra" justifyContent="center">
             {possiblePromotions.sort().map((piece) => (
               <Button onClick={() => onSelect(piece)} key={piece} size="lg">
-                <Piece className={`piece ${colorClassName} ${getPieceClass(piece)}`} />
+                <Piece className={`piece ${color} ${getPieceClass(piece)}`} />
               </Button>
             ))}
           </HStack>
