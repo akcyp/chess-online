@@ -10,7 +10,7 @@ const Fancy404Text = styled.div`
 
 export const NotFoundPage = () => {
   return (
-    <BasicLayout>
+    <BasicLayout username="?">
       <Center h="80vh">
         <Fancy404Text>404</Fancy404Text>
       </Center>

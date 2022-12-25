@@ -7,8 +7,6 @@ import { WSSendMessage } from '../types/WSSendMessage';
 
 export { ReadyState };
 
-const API_URL = 'localhost:3000';
-
 export const WebsocketContext = createContext<{
   readyState: ReadyState;
   lastMessage: null | WSReceivedMessage;
@@ -50,7 +48,7 @@ export const WebsocketProvider = ({ children }: { children: JSX.Element | JSX.El
     sendMessage,
     lastMessage: rawLastMessage,
     readyState,
-  } = useWebSocket(`ws://${API_URL}/ws/${socketNamespace}`, {
+  } = useWebSocket(`wss://${window.API_URL}/ws/${socketNamespace}`, {
     shouldReconnect: () => true,
   });
 

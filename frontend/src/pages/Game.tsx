@@ -11,11 +11,12 @@ import { findPromotionMoves } from 'src/helpers/findPromotionMoves';
 import { useWebsocketContext } from '../contexts/WebsocketContext';
 import { useKeyboard } from '../hooks/useKeyboard';
 
-const API_URL = 'localhost:3000';
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { id = '' } = params;
-  const response = (await fetch(`http://${API_URL}/api/game/${id}`).then((res) => res.json())) as { id: string };
-  return { id: response.id };
+  const response: { id: string; auth: { username: string } } = await fetch(
+    `https://${window.API_URL}/api/game/${id}`,
+  ).then((res) => res.json());
+  return { id: response.id, auth: response.auth };
 };
 
 export const GamePage = () => {
@@ -76,6 +77,8 @@ export const GamePage = () => {
     winner: null,
   });
 
+  const playAs = players.black?.isYou ? 'black' : players.white?.isYou ? 'white' : null;
+
   useEffect(() => {
     if (lastMessage === null) return;
     switch (lastMessage.type) {
@@ -101,8 +104,6 @@ export const GamePage = () => {
     }
   }, [lastMessage]);
 
-  const playAs = players.black?.isYou ? 'black' : 'white';
-
   return (
     <>
       <DebugModal data={getEngineState(fen, engine)} isOpen={isDebugModalOpen} onClose={debugModal.off} />
@@ -126,7 +127,7 @@ export const GamePage = () => {
                 }
               }}
               orientation="white"
-              playAs={playAs}
+              playAs={playAs ?? 'white'}
             />
             <ChessboardPromotion
               isOpen={promotionPrompt.isOpen}
@@ -139,7 +140,7 @@ export const GamePage = () => {
                 dispatchPromotionPromptAction({ type: 'reset' });
               }}
               onAbort={() => {
-                ref.current?.setFen(engine.fen(), { movable: true });
+                ref.current?.setFen(engine.fen());
                 dispatchPromotionPromptAction({ type: 'reset' });
               }}
             />

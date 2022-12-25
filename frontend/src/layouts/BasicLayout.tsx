@@ -1,14 +1,16 @@
 import { Box } from '@chakra-ui/react';
 import { Navbar } from '@components/Navbar';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLoaderData } from 'react-router-dom';
 
 import { ReadyState, useWebsocketContext } from '../contexts/WebsocketContext';
 
 type BasicLayoutProps = {
   children?: JSX.Element | JSX.Element[];
+  username?: string;
 };
 
-export const BasicLayout = ({ children }: BasicLayoutProps) => {
+export const BasicLayout = ({ children, username }: BasicLayoutProps) => {
+  const auth = username ? { username } : (useLoaderData() as { auth: { username: string } }).auth;
   const { readyState } = useWebsocketContext();
   const statusColor = {
     [ReadyState.CLOSED]: 'red',
@@ -19,7 +21,7 @@ export const BasicLayout = ({ children }: BasicLayoutProps) => {
   }[readyState];
   return (
     <>
-      <Navbar statusColor={statusColor} />
+      <Navbar statusColor={statusColor} username={auth.username} />
       <Box padding={[2, 6]}>{children ? children : <Outlet />}</Box>
     </>
   );

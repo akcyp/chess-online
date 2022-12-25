@@ -10,8 +10,8 @@ export class GamePlayAction {
   type!: 'play';
 
   @Expose()
-  @IsEnum(['white', 'black'])
-  color!: 'white' | 'black';
+  @IsEnum(['white', 'black', 'exit'])
+  color!: 'white' | 'black' | 'exit';
 
   static validate = createDTOValidator(this);
 }

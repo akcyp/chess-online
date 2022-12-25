@@ -26,7 +26,7 @@ const RenderLogo = () => (
   <Image src={Logo} w="72px" transform={['scale(2)', 'scale(2) translate(12px, 0px)']} alt="PF Chess" />
 );
 
-export const Navbar = ({ statusColor }: { statusColor: string }) => {
+export const Navbar = ({ statusColor, username = '?' }: { statusColor: string; username?: string }) => {
   const { isOpen, onToggle } = useDisclosure();
   return (
     <Box>
@@ -57,6 +57,11 @@ export const Navbar = ({ statusColor }: { statusColor: string }) => {
           </Flex>
         </Flex>
         <HStack>
+          <Hide below="md">
+            <Text fontSize="14px">
+              Logged as: <b>{username}</b> |
+            </Text>
+          </Hide>
           <Hide below="md">
             <Text fontSize="14px">Server status:</Text>
           </Hide>

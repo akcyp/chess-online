@@ -60,14 +60,17 @@ export class LobbyManager {
     });
     this.#games.set(id, room);
     if (!room.isPrivate()) {
-      this.emit({
-        type: 'updateGames',
-        games: this.getGamesInfo(),
-      });
+      this.updateGames();
     }
     user.send({
       type: 'gameCreated',
       id,
+    });
+  }
+  updateGames() {
+    this.emit({
+      type: 'updateGames',
+      games: this.getGamesInfo(),
     });
   }
 }

@@ -35,7 +35,12 @@ router.use(async (ctx, next) => {
 });
 
 router.use((ctx, next) => {
-  ctx.response.headers.set('Access-Control-Allow-Origin', '*');
+  ctx.response.headers.set(
+    'Access-Control-Allow-Origin',
+    'https://localhost:4000',
+  );
+  ctx.response.headers.set('Access-Control-Allow-Credentials', 'true');
+  ctx.response.headers.set('Access-Control-Allow-Headers', '*');
   if (!ctx.state.session.has('userUUID')) {
     ctx.state.session.set('userUUID', crypto.randomUUID());
   }
@@ -43,6 +48,12 @@ router.use((ctx, next) => {
     ctx.state.session.set('username', generateUsername());
   }
   return next();
+});
+
+router.get('/api/lobby', (ctx) => {
+  ctx.response.body = {
+    username: ctx.state.session.get('username') as string,
+  };
 });
 
 router.get('/ws/lobby', (ctx) => {
@@ -89,7 +100,12 @@ router.get('/api/game/:id', (ctx) => {
   const id = ctx.params.id;
   const room = lobbyManager.getGameRoom(id);
   if (room) {
-    ctx.response.body = room.getPreview();
+    ctx.response.body = {
+      ...room.getPreview(),
+      auth: {
+        username: ctx.state.session.get('username') as string,
+      },
+    };
   } else {
     ctx.throw(404);
   }
@@ -132,6 +148,10 @@ router.get('/ws/game/:id', (ctx) => {
         logger.warn(
           `User: ${user.uuid} is trying to play as ${instance.color}`,
         );
+        const updated = room.playAs(user, instance.color);
+        if (updated) {
+          lobbyManager.updateGames();
+        }
         break;
       }
       case 'ready': {
@@ -140,6 +160,7 @@ router.get('/ws/game/:id', (ctx) => {
             instance.ready ? 'ready' : 'not ready'
           }`,
         );
+        room.setReady(user, instance.ready);
         break;
       }
       case 'move': {

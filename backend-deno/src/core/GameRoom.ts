@@ -1,10 +1,36 @@
 import { ChessGame } from 'chess';
+import { WSServerGameMessage } from '../types/WSServerMessage.ts';
+import { GameRoomPlayer } from './GameRoomPlayer.ts';
 import { User } from './User.ts';
 
 export type GameRoomState = {
   players: {
-    white: null;
-    black: null;
+    white: null | {
+      nick: string;
+      online: boolean;
+      timeLeft: number;
+      lastTurnTs: number;
+      isYou: boolean;
+    };
+    black: null | {
+      nick: string;
+      online: boolean;
+      timeLeft: number;
+      lastTurnTs: number;
+      isYou: boolean;
+    };
+  };
+  game: {
+    fen: string;
+    timeControl: {
+      minutes: number;
+      increment: number;
+    };
+    readyToPlay: boolean;
+    gameStarted: boolean;
+    gameOver: boolean;
+    turn: 'white' | 'black' | null;
+    winner: 'white' | 'black' | 'draw' | null;
   };
 };
 
@@ -18,9 +44,10 @@ export type GameRoomConfig = {
 export class GameRoom {
   #config: GameRoomConfig;
   #players = {
-    white: null as null | User,
-    black: null as null | User,
+    white: null as null | GameRoomPlayer,
+    black: null as null | GameRoomPlayer,
   };
+  #gameStarted = false;
   constructor(config: GameRoomConfig) {
     this.#config = config;
   }
@@ -28,27 +55,137 @@ export class GameRoom {
   isPrivate() {
     return this.#config.private;
   }
-  getState(): GameRoomState {
+  getGameState() {
+    const fen = this.#engine.toString('fen');
+    const engineStatus = this.#engine.getStatus();
+    const gameStarted = this.#gameStarted;
+    const gameOver = !(engineStatus.state === 'active');
+    const turn = engineStatus.turn;
+    const winner = engineStatus.winner || null;
+    return {
+      fen,
+      gameStarted,
+      gameOver,
+      turn,
+      winner,
+    };
+  }
+  getState(payloadRequester?: User): GameRoomState {
+    const { fen, gameStarted, gameOver, turn, winner } = this.getGameState();
     return {
       players: {
-        white: null,
-        black: null,
+        white: this.#players.white
+          ? this.#players.white.getState(payloadRequester)
+          : null,
+        black: this.#players.black
+          ? this.#players.black.getState(payloadRequester)
+          : null,
+      },
+      game: {
+        timeControl: {
+          minutes: this.#config.minutesPerSide,
+          increment: this.#config.incrementTime,
+        },
+        readyToPlay: this.#players.white?.isReady() ||
+          this.#players.black?.isReady() || false,
+        fen,
+        gameStarted,
+        gameOver,
+        turn,
+        winner,
       },
     };
   }
   getPreview() {
     return {
       id: this.#config.id,
-      player1: this.#players.white?.username || '---',
-      player2: this.#players.black?.username || '---',
+      player1: this.#players.white?.getState().nick || '---',
+      player2: this.#players.black?.getState().nick || '---',
       time: [this.#config.minutesPerSide, this.#config.incrementTime],
     };
   }
   #users = new Set<User>();
   addUser(user: User) {
     this.#users.add(user);
+    const state = this.getState(user);
+    user.send({
+      type: 'players',
+      ...state.players,
+    });
+    user.send({
+      type: 'updateGameState',
+      ...state.game,
+    });
   }
   deleteUser(user: User) {
     this.#users.delete(user);
+  }
+  emit(message: WSServerGameMessage | ((user: User) => WSServerGameMessage)) {
+    this.#users.forEach((user) => {
+      const data = message instanceof Function ? message(user) : message;
+      user.send(data);
+    });
+  }
+  playAs(user: User, color: 'white' | 'black' | 'exit') {
+    const gameState = this.getGameState();
+    if (gameState.gameOver || gameState.gameStarted) {
+      return false;
+    }
+    let updated = false;
+    if (color === 'exit') {
+      if (this.#players.white?.isUser(user.uuid)) {
+        this.#players.white = null;
+        updated = true;
+      }
+      if (this.#players.black?.isUser(user.uuid)) {
+        this.#players.black = null;
+        updated = true;
+      }
+    }
+    if (
+      color === 'white' && this.#players.white === null &&
+      !this.#players.black?.isUser(user.uuid)
+    ) {
+      this.#players.white = new GameRoomPlayer(user);
+      updated = true;
+    }
+    if (
+      color === 'black' && this.#players.black === null &&
+      !this.#players.white?.isUser(user.uuid)
+    ) {
+      this.#players.black = new GameRoomPlayer(user);
+      updated = true;
+    }
+    if (updated) {
+      this.emit((user) => {
+        const state = this.getState(user);
+        return {
+          type: 'players',
+          ...state.players,
+        };
+      });
+    }
+    return updated;
+  }
+  setReady(user: User, isReady: boolean) {
+    let updated = false;
+    if (this.#players.white?.isUser(user.uuid)) {
+      this.#players.white.setReady(isReady);
+      updated = true;
+    }
+    if (this.#players.black?.isUser(user.uuid)) {
+      this.#players.black.setReady(isReady);
+      updated = true;
+    }
+    if (this.#players.white?.isReady() && this.#players.black?.isReady()) {
+      this.#gameStarted = true;
+    }
+    if (updated) {
+      const state = this.getState();
+      this.emit({
+        type: 'updateGameState',
+        ...state.game,
+      });
+    }
   }
 }

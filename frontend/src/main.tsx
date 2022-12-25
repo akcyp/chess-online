@@ -16,6 +16,14 @@ import { LobbyPage } from './pages/Lobby';
 const router = createBrowserRouter([
   {
     path: '/',
+    loader: async () => {
+      const response = (await fetch(`https://${window.API_URL}/api/lobby`, {
+        credentials: 'include',
+      }).then((res) => res.json())) as {
+        username: string;
+      };
+      return { auth: response };
+    },
     element: (
       <WebsocketProvider>
         <BasicLayout />
