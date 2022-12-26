@@ -169,10 +169,12 @@ router.get('/ws/game/:id', (ctx) => {
             instance.promotion ? `with promotion ${instance.promotion}` : ''
           }`,
         );
+        room.playMove(user, instance);
         break;
       }
       case 'offerdraw': {
         logger.warn(`User: ${user.uuid} is trying to offer draw`);
+        room.offerdraw(user);
         break;
       }
       case 'rematch': {
@@ -181,6 +183,7 @@ router.get('/ws/game/:id', (ctx) => {
       }
       case 'resign': {
         logger.warn(`User: ${user.uuid} is trying to resign`);
+        room.resign(user);
         break;
       }
     }

@@ -2,12 +2,13 @@ import 'chessground/assets/chessground.base.css';
 import 'chessground/assets/chessground.brown.css';
 import 'chessground/assets/chessground.cburnett.css';
 
-import { Chess, Move } from 'chess.js';
+import { Chess, Move, PieceSymbol } from 'chess.js';
 import { Chessground } from 'chessground';
 import type { Api } from 'chessground/api';
 import type { Config } from 'chessground/config';
-import type { Key, Piece } from 'chessground/types';
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import type { Key } from 'chessground/types';
+import { useEffect, useRef, useState } from 'react';
+import { findPromotionMoves } from 'src/helpers/findPromotionMoves';
 import styled from 'styled-components';
 
 const BoardContainer = styled.div`
@@ -17,15 +18,17 @@ const BoardContainer = styled.div`
 `;
 
 export type ChessboardProps = {
-  onLoad?: (api: Api) => void;
   orientation?: 'white' | 'black';
-  playAs: 'white' | 'black';
-  onMove?: (from: Key, to: Key, capturedPiece?: Piece) => void;
-};
-
-export type ChessboardActions = {
-  getApi(): Api;
-  setFen(fen: string, options?: { movable?: boolean }): void;
+  onMove?: (data: { from: Key; to: Key }) => void;
+  onPromotion?: (promotion: {
+    possiblePromotions: PieceSymbol[];
+    color: 'white' | 'black';
+    from: string;
+    to: string;
+  }) => Promise<boolean>;
+  playAs: 'white' | 'black' | null;
+  movable: boolean;
+  fen: string;
 };
 
 const getMovesFromEngine = (engine: Chess) => {
@@ -39,94 +42,115 @@ const getMovesFromEngine = (engine: Chess) => {
   }, new Map());
 };
 
-export const Chessboard = forwardRef<ChessboardActions, ChessboardProps>(
-  ({ onLoad = () => void 0, onMove = () => void 0, playAs, orientation }, ref) => {
-    const nativeRef = useRef<HTMLDivElement>(null);
-    const [board, setBoard] = useState<Api | null>(null);
+export const Chessboard = ({
+  onMove = () => void 0,
+  onPromotion = () => Promise.resolve(false),
+  orientation,
+  playAs,
+  movable,
+  fen,
+}: ChessboardProps) => {
+  const nativeRef = useRef<HTMLDivElement>(null);
+  const [board, setBoard] = useState<Api | null>(null);
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        getApi() {
-          if (!board) {
-            throw new Error('Board not initialized');
+  useEffect(() => {
+    const chess = new Chess();
+    try {
+      const loaded = chess.load(fen);
+      if (!loaded) {
+        throw new Error('Failed to load fen');
+      }
+    } catch (err) {
+      console.error(err);
+      return;
+    }
+    const turn = chess.turn() === 'w' ? 'white' : 'black';
+    board?.set({
+      fen,
+      check: chess.isCheck(),
+      movable: {
+        color: playAs || 'white',
+        dests: playAs === turn && movable ? getMovesFromEngine(chess) : new Map(),
+        free: false,
+        showDests: true,
+      },
+      turnColor: turn,
+      selectable: {
+        enabled: movable,
+      },
+      premovable: {
+        enabled: false,
+      },
+    });
+  }, [board, movable, playAs, fen]);
+
+  useEffect(() => {
+    board?.set({
+      events: {
+        move(from, to) {
+          const engine = new Chess(fen);
+          const promotions = findPromotionMoves(engine, from, to);
+          if (promotions.possiblePromotions.length > 0) {
+            onPromotion(promotions).then((promotionPassed) => {
+              if (!promotionPassed) {
+                board.set({
+                  fen,
+                });
+              }
+            });
+          } else {
+            onMove({ from, to });
           }
-          return board;
         },
-        setFen(fen, opts = {}) {
-          const options = {
-            movable: false,
-            ...opts,
-          };
-          const chess = new Chess();
-          try {
-            const loaded = chess.load(fen);
-            if (!loaded) {
-              throw new Error('Failed to load fen');
+      },
+    });
+  }, [onMove, onPromotion, fen]);
+
+  useEffect(() => {
+    board?.toggleOrientation();
+  }, [orientation]);
+
+  useEffect(() => {
+    if (nativeRef.current && !board) {
+      const api = Chessground(nativeRef.current, {
+        orientation,
+        disableContextMenu: true,
+        animation: { enabled: true, duration: 200 },
+        movable: {
+          color: undefined,
+          free: false,
+          showDests: true,
+          dests: new Map(),
+        },
+        selectable: {
+          enabled: false,
+        },
+        premovable: {
+          enabled: false,
+        },
+        events: {
+          move(from, to) {
+            const engine = new Chess(fen);
+            const promotions = findPromotionMoves(engine, from, to);
+            if (promotions.possiblePromotions.length > 0) {
+              onPromotion(promotions).then((promotionPassed) => {
+                if (!promotionPassed) {
+                  api.set({
+                    fen,
+                  });
+                }
+              });
+            } else {
+              onMove({ from, to });
             }
-          } catch (err) {
-            console.error(err);
-            return false;
-          }
-          this.getApi().set({
-            fen,
-            check: chess.isCheck(),
-            movable: {
-              color: options.movable ? (chess.turn() === 'w' ? 'white' : 'black') : undefined,
-              dests: options.movable ? getMovesFromEngine(chess) : new Map(),
-              free: false,
-              showDests: true,
-            },
-            turnColor: playAs,
-            selectable: {
-              enabled: options.movable,
-            },
-          });
-          return true;
+          },
         },
-      }),
-      [board],
-    );
+      });
+      setBoard(api);
+    }
+  }, [nativeRef]);
 
-    useEffect(() => {
-      if (board) {
-        onLoad(board);
-      }
-    }, [board]);
-
-    useEffect(() => {
-      board?.toggleOrientation();
-    }, [orientation]);
-
-    useEffect(() => {
-      if (nativeRef.current && !board) {
-        const api = Chessground(nativeRef.current, {
-          orientation,
-          disableContextMenu: true,
-          animation: { enabled: true, duration: 200 },
-          movable: {
-            color: undefined,
-            free: false,
-            showDests: true,
-            dests: new Map(),
-          },
-          selectable: {
-            enabled: false,
-          },
-          events: {
-            move(orig, dest, capturedPiece) {
-              onMove(orig, dest, capturedPiece);
-            },
-          },
-        });
-        setBoard(api);
-      }
-    }, [nativeRef]);
-
-    return <BoardContainer ref={nativeRef} />;
-  },
-);
-
-Chessboard.displayName = 'Chessboard';
+  return <BoardContainer ref={nativeRef} />;
+};
 
 export { Api, Config };

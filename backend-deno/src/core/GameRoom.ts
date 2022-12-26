@@ -106,6 +106,14 @@ export class GameRoom {
   }
   #users = new Set<User>();
   addUser(user: User) {
+    if (this.#players.white?.isUser(user.uuid)) {
+      this.#players.white.reconnect(user);
+      this.updatePlayers();
+    }
+    if (this.#players.black?.isUser(user.uuid)) {
+      this.#players.black.reconnect(user);
+      this.updatePlayers();
+    }
     this.#users.add(user);
     const state = this.getState(user);
     user.send({
@@ -119,6 +127,14 @@ export class GameRoom {
   }
   deleteUser(user: User) {
     this.#users.delete(user);
+    if (this.#players.white?.isUser(user.uuid)) {
+      this.#players.white.disconnect();
+      this.updatePlayers();
+    }
+    if (this.#players.black?.isUser(user.uuid)) {
+      this.#players.black.disconnect();
+      this.updatePlayers();
+    }
   }
   emit(message: WSServerGameMessage | ((user: User) => WSServerGameMessage)) {
     this.#users.forEach((user) => {
@@ -157,13 +173,7 @@ export class GameRoom {
       updated = true;
     }
     if (updated) {
-      this.emit((user) => {
-        const state = this.getState(user);
-        return {
-          type: 'players',
-          ...state.players,
-        };
-      });
+      this.updatePlayers();
     }
     return updated;
   }
@@ -187,5 +197,64 @@ export class GameRoom {
         ...state.game,
       });
     }
+  }
+  playMove(user: User, data: { from: string; to: string; promotion?: string }) {
+    const gameState = this.getGameState();
+    if (!gameState.gameStarted || gameState.gameOver) {
+      return;
+    }
+    if (
+      (this.#players.white?.isUser(user.uuid) && gameState.turn === 'white') ||
+      (this.#players.black?.isUser(user.uuid) && gameState.turn === 'black')
+    ) {
+      try {
+        this.#engine.move({
+          from: data.from,
+          dest: data.to,
+          promotion: data.promotion as 'B' | 'N' | 'R' | 'Q' | undefined,
+        });
+        const state = this.getState();
+        this.emit({
+          type: 'updateGameState',
+          ...state.game,
+        });
+      } catch (_) {
+        void 0;
+      }
+    }
+  }
+  resign(user: User) {
+    let updated = false;
+    const gameState = this.getGameState();
+    if (!gameState.gameStarted || gameState.gameOver) {
+      return;
+    }
+    if (this.#players.white?.isUser(user.uuid)) {
+      this.#engine.resignGame('white');
+      updated = true;
+    }
+    if (this.#players.black?.isUser(user.uuid)) {
+      this.#engine.resignGame('black');
+      updated = true;
+    }
+    if (updated) {
+      const state = this.getState();
+      this.emit({
+        type: 'updateGameState',
+        ...state.game,
+      });
+    }
+  }
+  offerdraw(_user: User) {
+    // not implemented
+  }
+  updatePlayers() {
+    this.emit((user) => {
+      const state = this.getState(user);
+      return {
+        type: 'players',
+        ...state.players,
+      };
+    });
   }
 }

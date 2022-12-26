@@ -85,7 +85,7 @@ export const ChessboardPromotion = ({
       n: 'knight',
     }[piece]);
   return (
-    <Modal size="xl" isOpen={isOpen} closeOnEsc={false} onClose={onAbort} isCentered>
+    <Modal size="xl" isOpen={isOpen} closeOnEsc={false} onClose={() => onAbort()} isCentered>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Select piece to promote</ModalHeader>

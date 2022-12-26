@@ -7,8 +7,16 @@ export class GameRoomPlayer {
   constructor(user: User) {
     this.#user = user;
   }
+  #disconnected = false;
   get disconnected() {
-    return false;
+    return this.#disconnected;
+  }
+  reconnect(user: User) {
+    this.#user = user;
+    this.#disconnected = false;
+  }
+  disconnect() {
+    this.#disconnected = true;
   }
   getState(payloadRequester?: User) {
     return {

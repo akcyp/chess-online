@@ -1,9 +1,10 @@
 import { Modal, ModalBody, ModalCloseButton, ModalContent, ModalHeader, ModalOverlay } from '@chakra-ui/react';
-import type { Chess } from 'chess.js';
+import { Chess } from 'chess.js';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { monokai } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
-export const getEngineState = (fen: string, engine: Chess) => {
+export const getEngineState = (fen: string) => {
+  const engine = new Chess(fen);
   return {
     fen,
     history: engine.history().join(' '),

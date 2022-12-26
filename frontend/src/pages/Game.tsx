@@ -1,12 +1,10 @@
 import { Center, Grid, GridItem, useBoolean } from '@chakra-ui/react';
-import { Chessboard, ChessboardActions } from '@components/Chessboard';
+import { Chessboard } from '@components/Chessboard';
 import { ChessboardPromotion, ChessboardPromotionReducer } from '@components/ChessboardPromotion';
 import { DebugModal, getEngineState } from '@components/DebugModal';
 import { GamePanel } from '@components/GamePanel';
-import { Chess } from 'chess.js';
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { LoaderFunctionArgs, useLoaderData, useNavigate } from 'react-router-dom';
-import { findPromotionMoves } from 'src/helpers/findPromotionMoves';
 
 import { useWebsocketContext } from '../contexts/WebsocketContext';
 import { useKeyboard } from '../hooks/useKeyboard';
@@ -23,10 +21,8 @@ export const GamePage = () => {
   const { id } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const navigate = useNavigate();
   const { send, lastMessage } = useWebsocketContext();
-  const ref = useRef<ChessboardActions>(null);
 
-  const [engine] = useState(new Chess());
-  const [fen, setFen] = useState(engine.fen());
+  const [fen, setFen] = useState('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
   const [isDebugModalOpen, debugModal] = useBoolean(false);
   const [promotionPrompt, dispatchPromotionPromptAction] = useReducer(ChessboardPromotionReducer, {
@@ -40,12 +36,8 @@ export const GamePage = () => {
         ...moveData,
       });
     },
-    [ref, engine, send],
+    [send],
   );
-
-  useKeyboard({
-    Escape: () => debugModal.toggle(),
-  });
 
   type PlayerState = {
     nick: string;
@@ -77,7 +69,13 @@ export const GamePage = () => {
     winner: null,
   });
 
-  const playAs = players.black?.isYou ? 'black' : players.white?.isYou ? 'white' : null;
+  const playAs = useMemo(() => {
+    return players.black?.isYou ? 'black' : players.white?.isYou ? 'white' : null;
+  }, [players]);
+
+  const movable = useMemo(() => {
+    return gameState.gameStarted && !gameState.gameOver;
+  }, [gameState]);
 
   useEffect(() => {
     if (lastMessage === null) return;
@@ -104,30 +102,32 @@ export const GamePage = () => {
     }
   }, [lastMessage]);
 
+  useKeyboard({
+    Escape: () => debugModal.toggle(),
+  });
+
   return (
     <>
-      <DebugModal data={getEngineState(fen, engine)} isOpen={isDebugModalOpen} onClose={debugModal.off} />
+      <DebugModal data={getEngineState(fen)} isOpen={isDebugModalOpen} onClose={debugModal.off} />
       <Center h="100%">
         <Grid gridTemplateAreas={[`"board" "panel"`, `"board panel"`]} gap={3} alignItems="center">
           <GridItem w={[300, 600]} h={[300, 600]} area="board">
             <Chessboard
-              ref={ref}
-              onLoad={() => {
-                ref.current?.setFen(fen);
+              onMove={({ from, to }) => {
+                performMove({ from, to });
               }}
-              onMove={(from, to) => {
-                const promotions = findPromotionMoves(engine, from, to);
-                if (promotions.possiblePromotions.length > 0) {
-                  dispatchPromotionPromptAction({
-                    type: 'create',
-                    ...promotions,
-                  });
-                } else {
-                  performMove({ from, to });
-                }
+              onPromotion={(promotion) => {
+                dispatchPromotionPromptAction({
+                  type: 'create',
+                  ...promotion,
+                });
+                // TODO
+                return Promise.resolve(false);
               }}
               orientation="white"
-              playAs={playAs ?? 'white'}
+              fen={fen}
+              playAs={playAs}
+              movable={movable}
             />
             <ChessboardPromotion
               isOpen={promotionPrompt.isOpen}
@@ -140,7 +140,6 @@ export const GamePage = () => {
                 dispatchPromotionPromptAction({ type: 'reset' });
               }}
               onAbort={() => {
-                ref.current?.setFen(engine.fen());
                 dispatchPromotionPromptAction({ type: 'reset' });
               }}
             />

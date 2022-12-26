@@ -32,7 +32,7 @@ export const PlayerTimer = ({ milis, auto = true, lastTurnTs }: PlayerTimerProps
       boxShadow="xl"
       p={[1, 2]}
       bg={panic ? 'red.400' : 'blackAlpha.700'}
-      w={[70, 150]}
+      w={[75, 150]}
       color="white"
       textAlign="center"
     >
