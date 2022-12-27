@@ -48,6 +48,7 @@ export const GamePage = () => {
       },
       readyToPlay: false,
       rematchOffered: false,
+      drawOffered: false,
       gameStarted: false,
       gameOver: false,
       turn: null,

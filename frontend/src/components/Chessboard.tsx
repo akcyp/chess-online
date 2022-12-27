@@ -81,6 +81,7 @@ export const Chessboard = ({
       premovable: {
         enabled: false,
       },
+      lastMove: undefined,
     });
   }, [board, config]);
 
@@ -88,6 +89,7 @@ export const Chessboard = ({
     if (ignoreNextFenUpdate.current === false) {
       board?.set({
         fen: config.fen,
+        lastMove: undefined,
       });
     } else {
       ignoreNextFenUpdate.current = false;
@@ -114,6 +116,7 @@ export const Chessboard = ({
                     free: false,
                     showDests: true,
                   },
+                  lastMove: undefined,
                 });
               }
             });
@@ -148,6 +151,7 @@ export const Chessboard = ({
         premovable: {
           enabled: false,
         },
+        lastMove: undefined,
       });
       setBoard(api);
     }

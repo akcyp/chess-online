@@ -39,6 +39,7 @@ export class GameRoomPlayer {
   readonly #internalState = {
     isReady: false,
     requestedNewGame: false,
+    drawOffered: false,
   };
   public setReady(isReady: boolean) {
     this.#internalState.isReady = isReady;
@@ -46,15 +47,31 @@ export class GameRoomPlayer {
   public isReady() {
     return this.#internalState.isReady;
   }
+  public toggleReady() {
+    return this.setReady(!this.isReady());
+  }
   public setNewGameRequest(wantReplay: boolean) {
     this.#internalState.requestedNewGame = wantReplay;
   }
   public isNewGameRequested() {
     return this.#internalState.requestedNewGame;
   }
+  public toggleNewGameRequest() {
+    return this.setNewGameRequest(!this.isNewGameRequested());
+  }
+  public setDrawOfferDecision(wantDraw: boolean) {
+    this.#internalState.drawOffered = wantDraw;
+  }
+  public isDrawOffered() {
+    return this.#internalState.drawOffered;
+  }
+  public toggleDrawOfferDecision() {
+    this.setDrawOfferDecision(!this.isDrawOffered());
+  }
   public reset(timeLeft: number) {
     this.#internalState.isReady = false;
     this.#internalState.requestedNewGame = false;
+    this.#internalState.drawOffered = false;
     this.timeControlState.timeLeft = timeLeft;
     this.timeControlState.timerStartTs = Date.now();
   }

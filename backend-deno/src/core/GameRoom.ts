@@ -41,6 +41,7 @@ type GameRoomState = {
     };
     readyToPlay: boolean;
     rematchOffered: boolean;
+    drawOffered: boolean;
     gameStarted: boolean;
     gameOver: boolean;
     turn: 'white' | 'black' | null;
@@ -180,7 +181,9 @@ export class GameRoom
     const gameStarted = this.#internalGameState.gameStarted;
     const gameOver = !(engineStatus.state === 'active');
     const turn = engineStatus.turn;
-    const winner = engineStatus.winner || null;
+    const winner = engineStatus.state.startsWith('draw')
+      ? 'draw'
+      : (engineStatus.winner || null);
     return {
       fen,
       gameStarted,
@@ -218,6 +221,8 @@ export class GameRoom
           this.#players.black?.isReady() || false,
         rematchOffered: (this.#players.white?.isNewGameRequested() ?? true) ||
           (this.#players.black?.isNewGameRequested() ?? true),
+        drawOffered: this.#players.white?.isDrawOffered() ||
+          this.#players.black?.isDrawOffered() || false,
         fen,
         gameStarted,
         gameOver,
@@ -244,21 +249,18 @@ export class GameRoom
         if (gameState.gameStarted && !gameState.gameOver) {
           return false;
         }
-        if (this.#players.white?.isUser(user.uuid)) {
-          this.#players.white = null;
-          return true;
+        const color = this.getPlayerColor(user);
+        if (color === null) {
+          return false;
         }
-        if (this.#players.black?.isUser(user.uuid)) {
-          this.#players.black = null;
-          return true;
-        }
+        this.#players[color] = null;
         if (
           gameState.gameOver && this.#players.white === null &&
           this.#players.black === null
         ) {
           this.resetGame();
         }
-        return false;
+        return true;
       }
       if (gameState.gameStarted || gameState.gameOver) {
         return false;
@@ -276,12 +278,12 @@ export class GameRoom
       }
       return false;
     },
-    setReady: (user: User, isReady: boolean) => {
+    setReady: (user: User, _isReady: boolean) => {
       const color = this.getPlayerColor(user);
       if (color === null) {
         return false;
       }
-      this.#players[color]!.setReady(isReady);
+      this.#players[color]!.toggleReady();
       if (this.#players.white?.isReady() && this.#players.black?.isReady()) {
         // Start game
         this.#internalGameState.gameStarted = true;
@@ -327,21 +329,36 @@ export class GameRoom
       if (!gameState.gameStarted || gameState.gameOver) {
         return false;
       }
-      this.recalcPlayerTime(gameState.turn);
+      this.recalcPlayerTime(gameState.turn, false);
       this.updatePlayerTime(gameState.turn === 'white' ? 'black' : 'white');
       this.#internalGameState.engine.resignGame(color);
       return true;
     },
-    offerdraw: (_user: User) => {
-      // not implemented
-      return false;
+    offerdraw: (user: User) => {
+      const color = this.getPlayerColor(user);
+      if (color === null) {
+        return false;
+      }
+      const gameState = this.getGameState();
+      if (!gameState.gameStarted || gameState.gameOver) {
+        return false;
+      }
+      this.#players[color]!.toggleDrawOfferDecision();
+      const whiteDecision = this.#players.white?.isDrawOffered() ?? false;
+      const blackDecision = this.#players.black?.isDrawOffered() ?? false;
+      if (whiteDecision && blackDecision) {
+        this.recalcPlayerTime(gameState.turn, false);
+        this.updatePlayerTime(gameState.turn === 'white' ? 'black' : 'white');
+        this.#internalGameState.engine.drawGame('Players accepted to draw');
+      }
+      return true;
     },
     playAgain: (user: User) => {
       const color = this.getPlayerColor(user);
       if (color === null) {
         return false;
       }
-      this.#players[color]!.setNewGameRequest(true);
+      this.#players[color]!.toggleNewGameRequest();
       const whiteDecision = this.#players.white
         ? this.#players.white.isNewGameRequested()
         : true;
@@ -368,12 +385,12 @@ export class GameRoom
     this.#players.white?.reset(this.#config.minutesPerSide * 60 * 1e3);
     this.#players.black?.reset(this.#config.minutesPerSide * 60 * 1e3);
   }
-  private recalcPlayerTime(color: 'white' | 'black') {
+  private recalcPlayerTime(color: 'white' | 'black', useIncrement = true) {
     const player = this.#players[color]!;
     this.updatePlayerTime(
       color,
       Date.now() - player.timeControlState.timerStartTs -
-        this.#config.incrementTime * 1e3,
+        (useIncrement ? this.#config.incrementTime * 1e3 : 0),
     );
   }
   private updatePlayerTime(color: 'white' | 'black', diff = 0) {

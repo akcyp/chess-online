@@ -127,9 +127,9 @@ export const GamePanel = ({ events, config, gameState }: GamePanelProps) => {
       </Tooltip>
     ),
     draw: (
-      <Tooltip label="Offer a draw">
+      <Tooltip label={gameState.game.drawOffered ? 'Opponent offered draw' : 'Offer a draw'}>
         <IconButton
-          colorScheme="orange"
+          colorScheme={gameState.game.drawOffered ? 'green' : 'orange'}
           icon={<BsDiamondHalf />}
           aria-label="Offer a draw"
           onClick={events.offerDraw}

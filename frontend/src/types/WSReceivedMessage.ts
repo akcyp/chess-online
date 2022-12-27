@@ -31,6 +31,7 @@ export type WSReceivedGameMessage = {
     };
     readyToPlay: boolean;
     rematchOffered: boolean;
+    drawOffered: boolean;
     gameStarted: boolean;
     gameOver: boolean;
     turn: 'white' | 'black' | null;
