@@ -2,18 +2,11 @@ import { CheckIcon, CloseIcon, UpDownIcon } from '@chakra-ui/icons';
 import { Badge, Box, Flex, HStack, IconButton, Tooltip } from '@chakra-ui/react';
 import { useMemo } from 'react';
 import { BsArrowRepeat, BsDiamondHalf, BsDoorClosed } from 'react-icons/bs';
+import { GameState } from 'src/types/GameState';
 
 import { parseGameTimeConfig } from '../../helpers/parseGameTimeConfig';
 import { PlayerBox, PlayerBoxEmpty } from './PlayerBox';
 import { PlayerTimer } from './PlayerTimer';
-
-type GamePanelPlayerProps = {
-  nick: string;
-  online: boolean;
-  timeLeft: number;
-  timerStartTs: number;
-  isYou: boolean;
-};
 
 type TimeControl = {
   minutes: number;
@@ -34,76 +27,136 @@ export type GamePanelProps = {
   };
   config: {
     id: string;
-    time: TimeControl;
     orientation: 'white' | 'black';
   };
-  players: {
-    white: GamePanelPlayerProps | null;
-    black: GamePanelPlayerProps | null;
-  };
-  game: {
-    readyToPlay: boolean;
-    rematchOffered: boolean;
-    gameStarted: boolean;
-    gameOver: boolean;
-    turn: null | 'white' | 'black';
-    winner: null | 'white' | 'black' | 'draw';
-  };
+  gameState: GameState;
 };
 
-const converTimeToTs = (time: TimeControl) => time.minutes * 6e4;
+const convertTimeToTs = (time: TimeControl) => time.minutes * 6e4;
 
-export const GamePanel = ({ events, config, players, game }: GamePanelProps) => {
-  const whitePlayerBox = useMemo(
-    () =>
-      players.white ? (
-        <PlayerBox
-          nick={players.white.nick}
-          online={players.white.online}
-          onExit={events.exitPlay}
-          exitIconVisible={players.white.isYou && (!game.gameStarted || game.gameOver)}
-        />
-      ) : (
-        <PlayerBoxEmpty color="white" onClick={events.playAsWhite} />
-      ),
-    [players.white, events, game],
-  );
+export const GamePanel = ({ events, config, gameState }: GamePanelProps) => {
+  const playAs = useMemo(() => {
+    return gameState.players.black?.isYou ? 'black' : gameState.players.white?.isYou ? 'white' : null;
+  }, [gameState.players]);
 
-  const blackPlayerBox = useMemo(
-    () =>
-      players.black ? (
-        <PlayerBox
-          nick={players.black.nick}
-          online={players.black.online}
-          onExit={events.exitPlay}
-          exitIconVisible={players.black.isYou && (!game.gameStarted || game.gameOver)}
-        />
-      ) : (
-        <PlayerBoxEmpty color="black" onClick={events.playAsBlack} />
-      ),
-    [players.black, events, game],
-  );
+  const whitePlayerBox = useMemo(() => {
+    const white = gameState.players.white;
+    return white ? (
+      <PlayerBox
+        nick={white.nick}
+        online={white.online}
+        onExit={events.exitPlay}
+        exitIconVisible={white.isYou && (!gameState.game.gameStarted || gameState.game.gameOver)}
+      />
+    ) : (
+      <PlayerBoxEmpty color="white" onClick={events.playAsWhite} />
+    );
+  }, [gameState.players.white, gameState.game, events]);
+
+  const blackPlayerBox = useMemo(() => {
+    const black = gameState.players.black;
+    return black ? (
+      <PlayerBox
+        nick={black.nick}
+        online={black.online}
+        onExit={events.exitPlay}
+        exitIconVisible={black.isYou && (!gameState.game.gameStarted || gameState.game.gameOver)}
+      />
+    ) : (
+      <PlayerBoxEmpty color="black" onClick={events.playAsBlack} />
+    );
+  }, [gameState.players.black, gameState.game, events]);
 
   const whiteTimer = useMemo(() => {
-    return (
+    const white = gameState.players.white;
+    return white ? (
       <PlayerTimer
-        milis={players.white?.timeLeft ?? converTimeToTs(config.time)}
-        auto={players.white !== null && game.turn === 'white' && game.gameStarted && !game.gameOver}
-        timerStartTs={players.white?.timerStartTs ?? Date.now()}
+        milis={white.timeLeft}
+        auto={gameState.game.turn === 'white' && gameState.game.gameStarted && !gameState.game.gameOver}
+        timerStartTs={white.timerStartTs}
       />
+    ) : (
+      <PlayerTimer milis={convertTimeToTs(gameState.game.timeControl)} auto={false} timerStartTs={0} />
     );
-  }, [players, game, config]);
+  }, [gameState.game, gameState.players.white]);
 
-  const blackTimer = useMemo(
-    () => (
+  const blackTimer = useMemo(() => {
+    const black = gameState.players.black;
+    return black ? (
       <PlayerTimer
-        milis={players.black?.timeLeft ?? converTimeToTs(config.time)}
-        auto={players.black !== null && game.turn === 'black' && game.gameStarted && !game.gameOver}
-        timerStartTs={players.black?.timerStartTs ?? Date.now()}
+        milis={black.timeLeft}
+        auto={gameState.game.turn === 'black' && gameState.game.gameStarted && !gameState.game.gameOver}
+        timerStartTs={black.timerStartTs}
       />
+    ) : (
+      <PlayerTimer milis={convertTimeToTs(gameState.game.timeControl)} auto={false} timerStartTs={0} />
+    );
+  }, [gameState.game, gameState.players.black]);
+
+  const winnerBox = useMemo(() => {
+    return (
+      gameState.game.winner && (
+        <Box textAlign="center" mt={2}>
+          <Badge colorScheme="red" fontSize="xl">
+            {gameState.game.winner} {gameState.game.winner === 'draw' ? '' : 'won!'}
+          </Badge>
+        </Box>
+      )
+    );
+  }, [gameState.game.winner]);
+
+  const actionButtons = {
+    toggleOrientation: (
+      <Tooltip label="Toggle orientation">
+        <IconButton
+          colorScheme="blue"
+          icon={<UpDownIcon />}
+          aria-label="Toggle orientation"
+          onClick={events.toggleOrientation}
+        ></IconButton>
+      </Tooltip>
     ),
-    [players, game, config],
-  );
+    ready: (
+      <Tooltip label="I'm ready">
+        <IconButton
+          colorScheme={gameState.game.readyToPlay ? 'green' : 'gray'}
+          icon={<CheckIcon />}
+          aria-label="I'm ready"
+          onClick={events.askForStart}
+        ></IconButton>
+      </Tooltip>
+    ),
+    draw: (
+      <Tooltip label="Offer a draw">
+        <IconButton
+          colorScheme="orange"
+          icon={<BsDiamondHalf />}
+          aria-label="Offer a draw"
+          onClick={events.offerDraw}
+        ></IconButton>
+      </Tooltip>
+    ),
+    resign: (
+      <Tooltip label="Resign">
+        <IconButton colorScheme="red" icon={<CloseIcon />} aria-label="Resign" onClick={events.resign}></IconButton>
+      </Tooltip>
+    ),
+    playAgain: (
+      <Tooltip label="Play again">
+        <IconButton
+          colorScheme={gameState.game.rematchOffered ? 'green' : 'orange'}
+          icon={<BsArrowRepeat />}
+          aria-label="Play again"
+          onClick={events.offerRematch}
+        ></IconButton>
+      </Tooltip>
+    ),
+    exit: (
+      <Tooltip label="Exit">
+        <IconButton colorScheme="red" icon={<BsDoorClosed />} aria-label="Exit" onClick={events.exit}></IconButton>
+      </Tooltip>
+    ),
+  };
 
   return (
     <Flex direction="column">
@@ -116,80 +169,22 @@ export const GamePanel = ({ events, config, players, game }: GamePanelProps) => 
           </Badge>
         </Box>
         <Box textAlign="center">
-          <Badge colorScheme="purple">{parseGameTimeConfig(config.time)}</Badge>
+          <Badge colorScheme="purple">{parseGameTimeConfig(gameState.game.timeControl)}</Badge>
         </Box>
-        {game.winner && (
-          <Box textAlign="center" mt={2}>
-            <Badge colorScheme="red" fontSize="xl">
-              {game.winner} {game.winner === 'draw' ? '' : 'won!'}
-            </Badge>
-          </Box>
-        )}
+        {winnerBox}
         <HStack justifyContent="center" p={2}>
-          {!game.gameStarted ? (
+          {actionButtons.toggleOrientation}
+          {playAs !== null && !gameState.game.gameStarted && <>{actionButtons.ready}</>}
+          {playAs !== null && gameState.game.gameStarted && !gameState.game.gameOver && (
             <>
-              <Tooltip label="I'm ready">
-                <IconButton
-                  colorScheme={game.readyToPlay ? 'green' : 'gray'}
-                  icon={<CheckIcon />}
-                  aria-label="I'm ready"
-                  onClick={events.askForStart}
-                ></IconButton>
-              </Tooltip>
+              {actionButtons.draw}
+              {actionButtons.resign}
             </>
-          ) : !game.gameOver ? (
+          )}
+          {playAs !== null && gameState.game.gameStarted && gameState.game.gameOver && (
             <>
-              <Tooltip label="Toggle orientation">
-                <IconButton
-                  colorScheme="blue"
-                  icon={<UpDownIcon />}
-                  aria-label="Toggle orientation"
-                  onClick={events.toggleOrientation}
-                ></IconButton>
-              </Tooltip>
-              <Tooltip label="Offer a draw">
-                <IconButton
-                  colorScheme="orange"
-                  icon={<BsDiamondHalf />}
-                  aria-label="Offer a draw"
-                  onClick={events.offerDraw}
-                ></IconButton>
-              </Tooltip>
-              <Tooltip label="Resign">
-                <IconButton
-                  colorScheme="red"
-                  icon={<CloseIcon />}
-                  aria-label="Resign"
-                  onClick={events.resign}
-                ></IconButton>
-              </Tooltip>
-            </>
-          ) : (
-            <>
-              <Tooltip label="Toggle orientation">
-                <IconButton
-                  colorScheme="blue"
-                  icon={<UpDownIcon />}
-                  aria-label="Toggle orientation"
-                  onClick={events.toggleOrientation}
-                ></IconButton>
-              </Tooltip>
-              <Tooltip label="Play again">
-                <IconButton
-                  colorScheme={game.rematchOffered ? 'green' : 'orange'}
-                  icon={<BsArrowRepeat />}
-                  aria-label="Play again"
-                  onClick={events.offerRematch}
-                ></IconButton>
-              </Tooltip>
-              <Tooltip label="Exit">
-                <IconButton
-                  colorScheme="red"
-                  icon={<BsDoorClosed />}
-                  aria-label="Exit"
-                  onClick={events.exit}
-                ></IconButton>
-              </Tooltip>
+              {actionButtons.playAgain}
+              {actionButtons.exit}
             </>
           )}
         </HStack>

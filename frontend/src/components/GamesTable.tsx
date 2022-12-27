@@ -9,7 +9,10 @@ export type GameTableProps = {
     id: string;
     player1: string;
     player2: string;
-    time: number[];
+    time: {
+      minutes: number;
+      increment: number;
+    };
   }[];
 };
 

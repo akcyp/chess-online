@@ -9,7 +9,6 @@ import { LoaderFunctionArgs, useLoaderData, useNavigate } from 'react-router-dom
 import { useWebsocketContext } from '../contexts/WebsocketContext';
 import { useKeyboard } from '../hooks/useKeyboard';
 import type { GameState } from '../types/GameState';
-import type { PlayerState } from '../types/PlayerState';
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { id = '' } = params;
@@ -24,7 +23,6 @@ export const GamePage = () => {
   const navigate = useNavigate();
   const { send, lastMessage } = useWebsocketContext();
 
-  const [fen, setFen] = useState('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
   const [isDebugModalOpen, debugModal] = useBoolean(false);
   const [promotionPrompt, dispatchPromotionPromptAction] = useReducer(ChessboardPromotionReducer, {
@@ -41,56 +39,46 @@ export const GamePage = () => {
     [send],
   );
 
-  const [players, setPlayers] = useState<{
-    white: PlayerState | null;
-    black: PlayerState | null;
-  }>({
-    white: null,
-    black: null,
-  });
-
-  const [timeControl, setTimeControl] = useState({
-    minutes: 0,
-    increment: 0,
-  });
   const [gameState, setGameState] = useState<GameState>({
-    readyToPlay: false,
-    rematchOffered: false,
-    gameStarted: false,
-    gameOver: false,
-    turn: null,
-    winner: null,
+    game: {
+      fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      timeControl: {
+        minutes: 0,
+        increment: 0,
+      },
+      readyToPlay: false,
+      rematchOffered: false,
+      gameStarted: false,
+      gameOver: false,
+      turn: null,
+      winner: null,
+    },
+    players: {
+      white: null,
+      black: null,
+    },
   });
 
   const playAs = useMemo(() => {
-    return players.black?.isYou ? 'black' : players.white?.isYou ? 'white' : null;
-  }, [players]);
+    return gameState.players.black?.isYou ? 'black' : gameState.players.white?.isYou ? 'white' : null;
+  }, [gameState.players]);
 
   const movable = useMemo(() => {
-    return gameState.gameStarted && !gameState.gameOver;
-  }, [gameState]);
+    return gameState.game.gameStarted && !gameState.game.gameOver;
+  }, [gameState.game]);
 
   useEffect(() => {
     if (lastMessage === null) return;
     switch (lastMessage.type) {
       case 'updateGameState': {
-        if (!gameState.gameStarted && lastMessage.gameStarted) {
+        if (!gameState.game.gameStarted && lastMessage.game.gameStarted) {
           if (playAs !== null) {
             setOrientation(playAs);
           }
         }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { type: _, timeControl, fen, ...rest } = lastMessage;
-        setTimeControl(timeControl);
-        setFen(fen);
+        const { type: _, ...rest } = lastMessage;
         setGameState(rest);
-        break;
-      }
-      case 'players': {
-        setPlayers({
-          white: lastMessage.white,
-          black: lastMessage.black,
-        });
         break;
       }
     }
@@ -115,7 +103,7 @@ export const GamePage = () => {
 
   return (
     <>
-      <DebugModal data={getEngineState(fen)} isOpen={isDebugModalOpen} onClose={debugModal.off} />
+      <DebugModal data={getEngineState(gameState.game.fen)} isOpen={isDebugModalOpen} onClose={debugModal.off} />
       <Center h="100%">
         <Grid gridTemplateAreas={[`"board" "panel"`, `"board panel"`]} gap={3} alignItems="center">
           <GridItem w={[300, 600]} h={[300, 600]} area="board">
@@ -124,7 +112,7 @@ export const GamePage = () => {
               onPromotion={onPromotion}
               orientation={orientation}
               config={{
-                fen,
+                fen: gameState.game.fen,
                 playAs,
                 movable,
               }}
@@ -148,7 +136,6 @@ export const GamePage = () => {
             <GamePanel
               config={{
                 id,
-                time: timeControl,
                 orientation,
               }}
               events={{
@@ -164,8 +151,7 @@ export const GamePage = () => {
                 offerRematch: () => send({ type: 'rematch' }),
                 exit: () => navigate('/'),
               }}
-              game={gameState}
-              players={players}
+              gameState={gameState}
             />
           </GridItem>
         </Grid>

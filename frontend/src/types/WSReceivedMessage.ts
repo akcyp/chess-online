@@ -5,7 +5,10 @@ export type WSReceivedLobbyMessage =
         id: string;
         player1: string;
         player2: string;
-        time: number[];
+        time: {
+          minutes: number;
+          increment: number;
+        };
       }[];
     }
   | {
@@ -18,37 +21,37 @@ export type WSReceivedLobbyMessage =
       error?: string;
     };
 
-export type WSReceivedGameMessage =
-  | {
-      type: 'players';
-      white: null | {
-        nick: string;
-        online: boolean;
-        timeLeft: number;
-        timerStartTs: number;
-        isYou: boolean;
-      };
-      black: null | {
-        nick: string;
-        online: boolean;
-        timeLeft: number;
-        timerStartTs: number;
-        isYou: boolean;
-      };
-    }
-  | {
-      type: 'updateGameState';
-      fen: string;
-      timeControl: {
-        minutes: number;
-        increment: number;
-      };
-      readyToPlay: boolean;
-      rematchOffered: boolean;
-      gameStarted: boolean;
-      gameOver: boolean;
-      turn: 'white' | 'black' | null;
-      winner: 'draw' | 'white' | 'black' | null;
+export type WSReceivedGameMessage = {
+  type: 'updateGameState';
+  game: {
+    fen: string;
+    timeControl: {
+      minutes: number;
+      increment: number;
     };
+    readyToPlay: boolean;
+    rematchOffered: boolean;
+    gameStarted: boolean;
+    gameOver: boolean;
+    turn: 'white' | 'black' | null;
+    winner: 'draw' | 'white' | 'black' | null;
+  };
+  players: {
+    white: null | {
+      nick: string;
+      online: boolean;
+      timeLeft: number;
+      timerStartTs: number;
+      isYou: boolean;
+    };
+    black: null | {
+      nick: string;
+      online: boolean;
+      timeLeft: number;
+      timerStartTs: number;
+      isYou: boolean;
+    };
+  };
+};
 
 export type WSReceivedMessage = WSReceivedLobbyMessage | WSReceivedGameMessage;
