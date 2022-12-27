@@ -8,7 +8,7 @@ import {
   gamePayloadValidator,
   lobbyPayloadValidator,
 } from './validator/validator.ts';
-import { User } from './core/User.ts';
+import { WSUser } from './core/WSUser.ts';
 
 export const router = new Router<AppState>();
 export const lobbyManager = new LobbyManager();
@@ -61,38 +61,21 @@ router.get('/ws/lobby', (ctx) => {
     ctx.throw(501);
     return;
   }
-  const ws = ctx.upgrade();
-  const user = new User({
+  const user = new WSUser({
     uuid: ctx.state.session.get('userUUID') as string,
     username: ctx.state.session.get('username') as string,
-    ws,
+    ws: ctx.upgrade(),
+    parseData: async (data) => {
+      return await lobbyPayloadValidator(data);
+    },
   });
-  ws.addEventListener('open', () => {
-    logger.info(`User ${user.uuid} connected to lobby`);
+  user.on('connection', () => {
+    logger.info(`User ${user.username} connected to lobby`);
     lobbyManager.addUser(user);
-  });
-  ws.addEventListener('close', () => {
-    logger.info(`User ${user.uuid} disconnected from lobby`);
-    lobbyManager.deleteUser(user);
-  });
-  ws.addEventListener('message', async (e) => {
-    logger.info(`User ${user.uuid} sent message to lobby: ${e.data}`);
-    const validationResult = await lobbyPayloadValidator(e.data);
-    if (validationResult instanceof Error) {
-      user.send({ error: validationResult.message });
-      return;
-    }
-    const { type, instance } = validationResult;
-    switch (type) {
-      case 'createGame': {
-        logger.warn(
-          `User: ${user.uuid} is creating game with following config`,
-          instance,
-        );
-        lobbyManager.createGame(user, instance);
-        break;
-      }
-    }
+  }).on('disconnect', () => {
+    logger.info(`User ${user.username} disconnected from lobby`);
+  }).on('message', (data) => {
+    logger.info(`User ${user.username} sent message to lobby: ${data}`);
   });
 });
 
@@ -121,69 +104,49 @@ router.get('/ws/game/:id', (ctx) => {
     ctx.throw(404);
     return;
   }
-  const ws = ctx.upgrade();
-  const user = new User({
+  const user = new WSUser({
     uuid: ctx.state.session.get('userUUID') as string,
     username: ctx.state.session.get('username') as string,
-    ws,
+    ws: ctx.upgrade(),
+    parseData: async (data) => {
+      return await gamePayloadValidator(data);
+    },
   });
-  ws.addEventListener('open', () => {
-    logger.info(`User ${user.uuid} connected`);
+  user.on('connection', () => {
+    logger.info(`User ${user.username} connected`);
     room.addUser(user);
-  });
-  ws.addEventListener('close', () => {
-    logger.info(`User ${user.uuid} disconnected`);
-    room.deleteUser(user);
-  });
-  ws.addEventListener('message', async (e) => {
-    logger.info(`User ${user.uuid} sent message: ${e.data}`);
-    const validationResult = await gamePayloadValidator(e.data);
-    if (validationResult instanceof Error) {
-      user.send({ error: validationResult.message });
-      return;
-    }
-    const { type, instance } = validationResult;
-    switch (type) {
+  }).on('disconnect', () => {
+    logger.info(`User ${user.username} disconnected`);
+  }).on('message', (data) => {
+    logger.info(`User ${user.username} sent message: ${data}`);
+  }).on('message:parse:success', (data) => {
+    switch (data.type) {
       case 'play': {
-        logger.warn(
-          `User: ${user.uuid} is trying to play as ${instance.color}`,
-        );
-        const updated = room.playAs(user, instance.color);
-        if (updated) {
-          lobbyManager.updateGames();
-        }
+        const { color } = data.instance;
+        logger.warn(`User: ${user.username} is trying to play as ${color}`);
         break;
       }
       case 'ready': {
-        logger.warn(
-          `User: ${user.uuid} is saying that is ${
-            instance.ready ? 'ready' : 'not ready'
-          }`,
-        );
-        room.setReady(user, instance.ready);
+        const readyText = data.instance.ready ? 'ready' : 'not ready';
+        logger.warn(`User: ${user.username} is saying that is ${readyText}`);
         break;
       }
       case 'move': {
-        logger.warn(
-          `User: ${user.uuid} is trying to move from ${instance.from} to ${instance.to} ${
-            instance.promotion ? `with promotion ${instance.promotion}` : ''
-          }`,
-        );
-        room.playMove(user, instance);
+        const { from, to, promotion } = data.instance;
+        const pText = promotion ? ` with promotion ${promotion}` : '';
+        logger.warn(`User: ${user.username} is moving ${from}-${to}${pText}`);
         break;
       }
       case 'offerdraw': {
-        logger.warn(`User: ${user.uuid} is trying to offer draw`);
-        room.offerdraw(user);
+        logger.warn(`User: ${user.username} is trying to offer draw`);
         break;
       }
       case 'rematch': {
-        logger.warn(`User: ${user.uuid} is trying to rematch`);
+        logger.warn(`User: ${user.username} is trying to rematch`);
         break;
       }
       case 'resign': {
-        logger.warn(`User: ${user.uuid} is trying to resign`);
-        room.resign(user);
+        logger.warn(`User: ${user.username} is trying to resign`);
         break;
       }
     }

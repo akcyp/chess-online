@@ -939,6 +939,7 @@
     "https://deno.land/x/deno_validator@v0.0.5/lib/whitelist.ts": "6a93eebaf03491c61cbb07c6357f9aa263bc5436d098f230c729d8158f2b578d",
     "https://deno.land/x/deno_validator@v0.0.5/mod.ts": "bfaaca0fd0f2e7e5f1b3f5aac25e4fac4371d1684c3c09b724649cde3f6294f6",
     "https://deno.land/x/deno_validator@v0.0.5/types.ts": "8c1a4747ce14c73dfb6b0fcc803df1827e322c88fac6d8ff94a07786e45ab739",
+    "https://deno.land/x/event@2.0.1/mod.ts": "5b36cd679785638b59228ac42876c628e54efc50ae0015ba1589b9e8f12969b4",
     "https://deno.land/x/logger@v1.0.2/date.ts": "09041dc83c9cddb489b875f45b07336dd894c23b9dd5b47235b94180571a2efa",
     "https://deno.land/x/logger@v1.0.2/deps.ts": "b70e9eb00927284209b39d6d715a3c1c7e9d77b8e95a38e2a8903a784930253c",
     "https://deno.land/x/logger@v1.0.2/eol.ts": "493acd048c546fd48bcd26365d4dadf3db81ce32c4611ca5b0b19e6de9f9826a",

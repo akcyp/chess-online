@@ -1,56 +1,70 @@
-import type { WSServerMessage } from '../types/WSServerMessage.ts';
-import type { User } from './User.ts';
+import type { WSServerLobbyMessage } from '../types/WSServerMessage.ts';
+import type { WSUser } from './WSUser.ts';
+import type { LobbyClientMessages } from '../validator/validator.ts';
+
+import { BasicRoomEventMap, WSRoom } from './WSRoom.ts';
 import { GameRoom } from './GameRoom.ts';
 import { getUniqueString } from '../utils/random.ts';
 
-export class LobbyManager {
-  #users = new Set<User>();
-  getUserCount() {
-    return this.#users.size;
-  }
-  broadcast(except: User, message: WSServerMessage) {
-    this.#users.forEach((user) => {
-      if (except !== user) {
-        user.send(message);
-      }
+type User = WSUser<LobbyClientMessages>;
+
+// deno-lint-ignore ban-types
+type LobbyEventMap = BasicRoomEventMap<User> & {};
+
+export class LobbyManager
+  extends WSRoom<User, WSServerLobbyMessage, LobbyEventMap> {
+  constructor() {
+    super();
+    this.on('connect:after', (user) => {
+      user.send({
+        type: 'updateGames',
+        games: this.getGamesInfo(),
+      });
+      user.on('message:parse:failed', (e) => {
+        user.send({ error: e.message });
+      }).on('message:parse:success', (data) => {
+        console.log(data, 'dispatcher');
+        switch (data.type) {
+          case 'createGame': {
+            this.createGame(user, data.instance);
+            break;
+          }
+        }
+      });
+      this.emitUpdate.updatePlayers();
+    }).on('disconnect:after', () => {
+      this.emitUpdate.updatePlayers();
     });
   }
-  emit(message: WSServerMessage) {
-    this.#users.forEach((user) => {
-      user.send(message);
-    });
-  }
-  addUser(user: User) {
-    this.#users.add(user);
-    this.emit({
-      type: 'updatePlayers',
-      count: this.getUserCount(),
-    });
-    user.send({
-      type: 'updateGames',
-      games: this.getGamesInfo(),
-    });
-  }
-  deleteUser(user: User) {
-    this.#users.delete(user);
-    this.emit({
-      type: 'updatePlayers',
-      count: this.getUserCount(),
-    });
-  }
-  #games = new Map<string, GameRoom>();
-  getGameRoom(id: string) {
+  readonly emitUpdate = {
+    updateGames: () => {
+      this.send({
+        type: 'updateGames',
+        games: this.getGamesInfo(),
+      });
+    },
+    updatePlayers: () => {
+      this.send({
+        type: 'updatePlayers',
+        count: this.getUsersCount(),
+      });
+    },
+  };
+
+  readonly #games = new Map<string, GameRoom>();
+  public getGameRoom(id: string) {
     return this.#games.get(id) ?? null;
   }
-  getGamesInfo() {
-    return [...this.#games.values()]
-      .filter((game) => !game.isPrivate())
-      .map((game) => game.getPreview());
+  private getGamesInfo() {
+    return [...this.#games.values()].filter((game) => !game.isPrivate()).map((
+      game,
+    ) => game.getPreview());
   }
-  createGame(
+  private createGame(
     user: User,
     config: { minutes: number; increment: number; private: boolean },
   ) {
+    console.log('creategame tttt');
     const id = getUniqueString([...this.#games.keys()]);
     const room = new GameRoom({
       id,
@@ -58,19 +72,16 @@ export class LobbyManager {
       incrementTime: config.increment,
       private: config.private,
     });
+    room.on('previewUpdated', () => {
+      this.emitUpdate.updateGames();
+    });
     this.#games.set(id, room);
     if (!room.isPrivate()) {
-      this.updateGames();
+      this.emitUpdate.updateGames();
     }
     user.send({
       type: 'gameCreated',
       id,
-    });
-  }
-  updateGames() {
-    this.emit({
-      type: 'updateGames',
-      games: this.getGamesInfo(),
     });
   }
 }

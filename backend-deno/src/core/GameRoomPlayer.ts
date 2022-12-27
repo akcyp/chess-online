@@ -1,40 +1,45 @@
-import type { User } from './User.ts';
+import type { GameClientMessages } from '../validator/validator.ts';
+import type { WSUser } from './WSUser.ts';
 
+type User = WSUser<GameClientMessages>;
 export class GameRoomPlayer {
   #user: User;
-  #timeLeft = 10 * 1e3;
-  #lastTurn = new Date();
-  constructor(user: User) {
-    this.#user = user;
+  public isUser(uuid: string) {
+    return this.#user.uuid === uuid;
   }
   #disconnected = false;
   get disconnected() {
     return this.#disconnected;
   }
-  reconnect(user: User) {
+  public reconnect(user: User) {
     this.#user = user;
     this.#disconnected = false;
   }
-  disconnect() {
+  public disconnect() {
     this.#disconnected = true;
   }
-  getState(payloadRequester?: User) {
+  public timeControlState = {
+    timeLeft: 0,
+    lastTurn: new Date(),
+  };
+  constructor(user: User) {
+    this.#user = user;
+  }
+  public getState() {
     return {
       nick: this.#user.username,
       online: !this.disconnected,
-      timeLeft: this.#timeLeft,
-      lastTurnTs: this.#lastTurn.getTime(),
-      isYou: payloadRequester === this.#user,
+      timeLeft: this.timeControlState.timeLeft,
+      lastTurnTs: this.timeControlState.lastTurn.getTime(),
     };
   }
-  isUser(uuid: string) {
-    return this.#user.uuid === uuid;
+  readonly #internalState = {
+    isReady: false,
+  };
+  public setReady(isReady: boolean) {
+    this.#internalState.isReady = isReady;
   }
-  #readyStatus = false;
-  setReady(ready: boolean) {
-    this.#readyStatus = ready;
-  }
-  isReady() {
-    return this.#readyStatus;
+  public isReady() {
+    return this.#internalState.isReady;
   }
 }

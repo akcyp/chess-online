@@ -15,7 +15,9 @@ export const lobbyPayloadValidator = combineDTOValidators(LobbyAction, {
   createGame: CreateGameAction,
 });
 
-export type lobbyClientMessages = CreateGameAction;
+export type LobbyClientMessages = Awaited<
+  ReturnType<typeof lobbyPayloadValidator>
+>;
 
 export const gamePayloadValidator = combineDTOValidators(GameAction, {
   play: GamePlayAction,
@@ -26,10 +28,6 @@ export const gamePayloadValidator = combineDTOValidators(GameAction, {
   rematch: GameRematchAction,
 });
 
-export type gameClientMessages =
-  | GamePlayAction
-  | GameReadyAction
-  | GameMoveAction
-  | GameOfferDrawAction
-  | GameResignAction
-  | GameRematchAction;
+export type GameClientMessages = Awaited<
+  ReturnType<typeof gamePayloadValidator>
+>;
