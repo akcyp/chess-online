@@ -40,6 +40,7 @@ type GameRoomState = {
       increment: number;
     };
     readyToPlay: boolean;
+    rematchOffered: boolean;
     gameStarted: boolean;
     gameOver: boolean;
     turn: 'white' | 'black' | null;
@@ -75,9 +76,6 @@ export class GameRoom
     }
     return null;
   }
-  readonly #internalGameState = {
-    gameStarted: false,
-  };
   readonly #config: GameRoomConfig;
   public isPrivate() {
     return this.#config.private;
@@ -88,21 +86,17 @@ export class GameRoom
     this.on('connect:before', (user) => {
       if (this.#players.white?.isUser(user.uuid)) {
         this.#players.white.reconnect(user);
-        this.callUpdate.updatePlayers();
+        this.callUpdate.updateGame();
       }
       if (this.#players.black?.isUser(user.uuid)) {
         this.#players.black.reconnect(user);
-        this.callUpdate.updatePlayers();
+        this.callUpdate.updateGame();
       }
     }).on('connect:after', (user) => {
       const state = this.getUserState(user);
       user.send({
-        type: 'players',
-        ...state.players,
-      });
-      user.send({
         type: 'updateGameState',
-        ...state.game,
+        ...state,
       });
       user.on('message:parse:failed', (e) => {
         user.send({ error: e.message });
@@ -111,7 +105,7 @@ export class GameRoom
           case 'play': {
             const updated = this.#actions.playAs(user, data.instance.color);
             if (updated) {
-              this.callUpdate.updatePlayers();
+              this.callUpdate.updateGame();
               this.emit('previewUpdated', this.getPreview());
             }
             break;
@@ -120,7 +114,6 @@ export class GameRoom
             const updated = this.#actions.setReady(user, data.instance.ready);
             if (updated) {
               this.callUpdate.updateGame();
-              this.callUpdate.updatePlayers();
             }
             break;
           }
@@ -128,7 +121,6 @@ export class GameRoom
             const updated = this.#actions.playMove(user, data.instance);
             if (updated) {
               this.callUpdate.updateGame();
-              this.callUpdate.updatePlayers();
             }
             break;
           }
@@ -150,7 +142,6 @@ export class GameRoom
             const updated = this.#actions.resign(user);
             if (updated) {
               this.callUpdate.updateGame();
-              this.callUpdate.updatePlayers();
             }
             break;
           }
@@ -159,37 +150,33 @@ export class GameRoom
     }).on('disconnect:after', (user) => {
       if (this.#players.white?.isUser(user.uuid)) {
         this.#players.white.disconnect();
-        this.callUpdate.updatePlayers();
+        this.callUpdate.updateGame();
       }
       if (this.#players.black?.isUser(user.uuid)) {
         this.#players.black.disconnect();
-        this.callUpdate.updatePlayers();
+        this.callUpdate.updateGame();
       }
     });
   }
   readonly callUpdate = {
-    updatePlayers: () => {
+    updateGame: () => {
       const state = this.getState();
       this.iterateOverUsers((user) => {
         const userState = this.getUserState(user, structuredClone(state));
         user.send({
-          type: 'players',
-          ...userState.players,
+          type: 'updateGameState',
+          ...userState,
         });
       });
     },
-    updateGame: () => {
-      const state = this.getState();
-      this.send({
-        type: 'updateGameState',
-        ...state.game,
-      });
-    },
   };
-  readonly #engine = ChessGame.NewStandardGame();
+  readonly #internalGameState = {
+    engine: ChessGame.NewStandardGame(),
+    gameStarted: false,
+  };
   private getGameState() {
-    const fen = this.#engine.toString('fen');
-    const engineStatus = this.#engine.getStatus();
+    const fen = this.#internalGameState.engine.toString('fen');
+    const engineStatus = this.#internalGameState.engine.getStatus();
     const gameStarted = this.#internalGameState.gameStarted;
     const gameOver = !(engineStatus.state === 'active');
     const turn = engineStatus.turn;
@@ -229,6 +216,8 @@ export class GameRoom
         },
         readyToPlay: this.#players.white?.isReady() ||
           this.#players.black?.isReady() || false,
+        rematchOffered: (this.#players.white?.isNewGameRequested() ?? true) ||
+          (this.#players.black?.isNewGameRequested() ?? true),
         fen,
         gameStarted,
         gameOver,
@@ -251,10 +240,10 @@ export class GameRoom
   readonly #actions = {
     playAs: (user: User, color: 'white' | 'black' | 'exit') => {
       const gameState = this.getGameState();
-      if (gameState.gameOver || gameState.gameStarted) {
-        return false;
-      }
       if (color === 'exit') {
+        if (gameState.gameStarted && !gameState.gameOver) {
+          return false;
+        }
         if (this.#players.white?.isUser(user.uuid)) {
           this.#players.white = null;
           return true;
@@ -263,6 +252,15 @@ export class GameRoom
           this.#players.black = null;
           return true;
         }
+        if (
+          gameState.gameOver && this.#players.white === null &&
+          this.#players.black === null
+        ) {
+          this.resetGame();
+        }
+        return false;
+      }
+      if (gameState.gameStarted || gameState.gameOver) {
         return false;
       }
       const oppositeColor = color === 'white' ? 'black' : 'white';
@@ -308,7 +306,7 @@ export class GameRoom
         return false;
       }
       try {
-        this.#engine.move({
+        this.#internalGameState.engine.move({
           from: data.from,
           dest: data.to,
           promotion: data.promotion as 'B' | 'N' | 'R' | 'Q' | undefined,
@@ -331,18 +329,45 @@ export class GameRoom
       }
       this.recalcPlayerTime(gameState.turn);
       this.updatePlayerTime(gameState.turn === 'white' ? 'black' : 'white');
-      this.#engine.resignGame(color);
+      this.#internalGameState.engine.resignGame(color);
       return true;
     },
     offerdraw: (_user: User) => {
       // not implemented
       return false;
     },
-    playAgain: (_user: User) => {
-      // not implemented
-      return false;
+    playAgain: (user: User) => {
+      const color = this.getPlayerColor(user);
+      if (color === null) {
+        return false;
+      }
+      this.#players[color]!.setNewGameRequest(true);
+      const whiteDecision = this.#players.white
+        ? this.#players.white.isNewGameRequested()
+        : true;
+      const blackDecision = this.#players.black
+        ? this.#players.black.isNewGameRequested()
+        : true;
+      if (whiteDecision && blackDecision) {
+        // Reset game
+        this.resetGame();
+        // Swap colors
+        if (this.#players.white && this.#players.black) {
+          [this.#players.white, this.#players.black] = [
+            this.#players.black,
+            this.#players.white,
+          ];
+        }
+      }
+      return true;
     },
   };
+  private resetGame() {
+    this.#internalGameState.gameStarted = false;
+    this.#internalGameState.engine = ChessGame.NewStandardGame();
+    this.#players.white?.reset(this.#config.minutesPerSide * 60 * 1e3);
+    this.#players.black?.reset(this.#config.minutesPerSide * 60 * 1e3);
+  }
   private recalcPlayerTime(color: 'white' | 'black') {
     const player = this.#players[color]!;
     this.updatePlayerTime(

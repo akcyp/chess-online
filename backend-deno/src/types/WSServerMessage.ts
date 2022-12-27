@@ -25,33 +25,36 @@ export type WSServerLobbyMessage =
   };
 
 export type WSServerGameMessage = {
-  type: 'players';
-  white: null | {
-    nick: string;
-    online: boolean;
-    timeLeft: number;
-    timerStartTs: number;
-    isYou: boolean;
-  };
-  black: null | {
-    nick: string;
-    online: boolean;
-    timeLeft: number;
-    timerStartTs: number;
-    isYou: boolean;
-  };
-} | {
   type: 'updateGameState';
-  fen: string;
-  timeControl: {
-    minutes: number;
-    increment: number;
+  game: {
+    fen: string;
+    timeControl: {
+      minutes: number;
+      increment: number;
+    };
+    readyToPlay: boolean;
+    rematchOffered: boolean;
+    gameStarted: boolean;
+    gameOver: boolean;
+    turn: 'white' | 'black' | null;
+    winner: 'white' | 'black' | 'draw' | null;
   };
-  readyToPlay: boolean;
-  gameStarted: boolean;
-  gameOver: boolean;
-  turn: 'white' | 'black' | null;
-  winner: 'white' | 'black' | 'draw' | null;
+  players: {
+    white: null | {
+      nick: string;
+      online: boolean;
+      timeLeft: number;
+      timerStartTs: number;
+      isYou: boolean;
+    };
+    black: null | {
+      nick: string;
+      online: boolean;
+      timeLeft: number;
+      timerStartTs: number;
+      isYou: boolean;
+    };
+  };
 };
 
 export type WSServerMessage = WSServerLobbyMessage | WSServerGameMessage;

@@ -4,6 +4,9 @@ import type { WSUser } from './WSUser.ts';
 type User = WSUser<GameClientMessages>;
 export class GameRoomPlayer {
   #user: User;
+  public getUser() {
+    return this.#user;
+  }
   public isUser(uuid: string) {
     return this.#user.uuid === uuid;
   }
@@ -35,11 +38,24 @@ export class GameRoomPlayer {
   }
   readonly #internalState = {
     isReady: false,
+    requestedNewGame: false,
   };
   public setReady(isReady: boolean) {
     this.#internalState.isReady = isReady;
   }
   public isReady() {
     return this.#internalState.isReady;
+  }
+  public setNewGameRequest(wantReplay: boolean) {
+    this.#internalState.requestedNewGame = wantReplay;
+  }
+  public isNewGameRequested() {
+    return this.#internalState.requestedNewGame;
+  }
+  public reset(timeLeft: number) {
+    this.#internalState.isReady = false;
+    this.#internalState.requestedNewGame = false;
+    this.timeControlState.timeLeft = timeLeft;
+    this.timeControlState.timerStartTs = Date.now();
   }
 }
