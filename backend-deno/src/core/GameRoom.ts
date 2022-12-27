@@ -22,14 +22,14 @@ type GameRoomState = {
       nick: string;
       online: boolean;
       timeLeft: number;
-      lastTurnTs: number;
+      timerStartTs: number;
       isYou: boolean;
     };
     black: null | {
       nick: string;
       online: boolean;
       timeLeft: number;
-      lastTurnTs: number;
+      timerStartTs: number;
       isYou: boolean;
     };
   };
@@ -120,6 +120,7 @@ export class GameRoom
             const updated = this.#actions.setReady(user, data.instance.ready);
             if (updated) {
               this.callUpdate.updateGame();
+              this.callUpdate.updatePlayers();
             }
             break;
           }
@@ -149,6 +150,7 @@ export class GameRoom
             const updated = this.#actions.resign(user);
             if (updated) {
               this.callUpdate.updateGame();
+              this.callUpdate.updatePlayers();
             }
             break;
           }
@@ -269,7 +271,8 @@ export class GameRoom
         !this.#players[oppositeColor]?.isUser(user.uuid)
       ) {
         const player = new GameRoomPlayer(user);
-        player.timeControlState.timeLeft = this.#config.minutesPerSide * 1e3;
+        player.timeControlState.timeLeft = this.#config.minutesPerSide * 60 *
+          1e3;
         this.#players[color] = player;
         return true;
       }
@@ -282,7 +285,10 @@ export class GameRoom
       }
       this.#players[color]!.setReady(isReady);
       if (this.#players.white?.isReady() && this.#players.black?.isReady()) {
+        // Start game
         this.#internalGameState.gameStarted = true;
+        this.updatePlayerTime('white', 0);
+        this.updatePlayerTime('black', 0);
       }
       return true;
     },
@@ -307,6 +313,8 @@ export class GameRoom
           dest: data.to,
           promotion: data.promotion as 'B' | 'N' | 'R' | 'Q' | undefined,
         });
+        this.recalcPlayerTime(color);
+        this.updatePlayerTime(color === 'white' ? 'black' : 'white');
         return true;
       } catch (_) {
         return false;
@@ -321,6 +329,8 @@ export class GameRoom
       if (!gameState.gameStarted || gameState.gameOver) {
         return false;
       }
+      this.recalcPlayerTime(gameState.turn);
+      this.updatePlayerTime(gameState.turn === 'white' ? 'black' : 'white');
       this.#engine.resignGame(color);
       return true;
     },
@@ -333,4 +343,17 @@ export class GameRoom
       return false;
     },
   };
+  private recalcPlayerTime(color: 'white' | 'black') {
+    const player = this.#players[color]!;
+    this.updatePlayerTime(
+      color,
+      Date.now() - player.timeControlState.timerStartTs -
+        this.#config.incrementTime * 1e3,
+    );
+  }
+  private updatePlayerTime(color: 'white' | 'black', diff = 0) {
+    const player = this.#players[color]!;
+    player.timeControlState.timeLeft -= diff;
+    player.timeControlState.timerStartTs = Date.now();
+  }
 }

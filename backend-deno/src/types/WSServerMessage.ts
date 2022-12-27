@@ -30,14 +30,14 @@ export type WSServerGameMessage = {
     nick: string;
     online: boolean;
     timeLeft: number;
-    lastTurnTs: number;
+    timerStartTs: number;
     isYou: boolean;
   };
   black: null | {
     nick: string;
     online: boolean;
     timeLeft: number;
-    lastTurnTs: number;
+    timerStartTs: number;
     isYou: boolean;
   };
 } | {

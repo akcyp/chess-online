@@ -6,26 +6,26 @@ import { parseTimerString } from '../../helpers/parseTimerToString';
 export type PlayerTimerProps = {
   milis: number;
   auto?: boolean;
-  lastTurnTs: number;
+  timerStartTs: number;
 };
 
-export const PlayerTimer = ({ milis, auto = true, lastTurnTs }: PlayerTimerProps) => {
-  const [miliseconds, setMiliseconds] = useState(milis - (auto ? Date.now() - lastTurnTs : 0));
+export const PlayerTimer = ({ milis, auto = true, timerStartTs }: PlayerTimerProps) => {
+  const [miliseconds, setMiliseconds] = useState(milis - (auto ? Date.now() - timerStartTs : 0));
   const extended = miliseconds <= 5e3;
   const panic = miliseconds <= 5e3;
 
   useEffect(() => {
-    setMiliseconds(milis - (auto ? Date.now() - lastTurnTs : 0));
+    setMiliseconds(milis - (auto ? Date.now() - timerStartTs : 0));
     if (!auto) {
       return;
     }
     const interval = setInterval(() => {
-      setMiliseconds(milis - (Date.now() - lastTurnTs));
-    }, 10);
+      setMiliseconds(milis - (Date.now() - timerStartTs));
+    }, 100);
     return () => {
       clearInterval(interval);
     };
-  }, [milis, lastTurnTs, auto]);
+  }, [milis, timerStartTs, auto]);
 
   return (
     <Box

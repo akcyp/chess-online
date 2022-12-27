@@ -20,7 +20,7 @@ export class GameRoomPlayer {
   }
   public timeControlState = {
     timeLeft: 0,
-    lastTurn: new Date(),
+    timerStartTs: 0,
   };
   constructor(user: User) {
     this.#user = user;
@@ -30,7 +30,7 @@ export class GameRoomPlayer {
       nick: this.#user.username,
       online: !this.disconnected,
       timeLeft: this.timeControlState.timeLeft,
-      lastTurnTs: this.timeControlState.lastTurn.getTime(),
+      timerStartTs: this.timeControlState.timerStartTs,
     };
   }
   readonly #internalState = {

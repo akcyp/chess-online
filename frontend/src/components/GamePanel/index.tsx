@@ -11,7 +11,7 @@ type GamePanelPlayerProps = {
   nick: string;
   online: boolean;
   timeLeft: number;
-  lastTurnTs: number;
+  timerStartTs: number;
   isYou: boolean;
 };
 
@@ -84,26 +84,25 @@ export const GamePanel = ({ events, config, players, game }: GamePanelProps) => 
     [players.black, events, game],
   );
 
-  const whiteTimer = useMemo(
-    () => (
+  const whiteTimer = useMemo(() => {
+    return (
       <PlayerTimer
         milis={players.white?.timeLeft ?? converTimeToTs(config.time)}
         auto={players.white !== null && game.turn === 'white' && game.gameStarted && !game.gameOver}
-        lastTurnTs={players.white?.lastTurnTs ?? Date.now()}
+        timerStartTs={players.white?.timerStartTs ?? Date.now()}
       />
-    ),
-    [players.white, game, config],
-  );
+    );
+  }, [players, game, config]);
 
   const blackTimer = useMemo(
     () => (
       <PlayerTimer
         milis={players.black?.timeLeft ?? converTimeToTs(config.time)}
         auto={players.black !== null && game.turn === 'black' && game.gameStarted && !game.gameOver}
-        lastTurnTs={players.black?.lastTurnTs ?? Date.now()}
+        timerStartTs={players.black?.timerStartTs ?? Date.now()}
       />
     ),
-    [players.black, game, config],
+    [players, game, config],
   );
 
   return (
