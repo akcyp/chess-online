@@ -271,8 +271,19 @@ export class GameRoom
         !this.#players[oppositeColor]?.isUser(user.uuid)
       ) {
         const player = new GameRoomPlayer(user);
-        player.timeControlState.timeLeft = this.#config.minutesPerSide * 60 *
-          1e3;
+        player.timeControlState.timeLeft = this.#config.minutesPerSide * 60e3;
+        player.on('notReconnected', () => {
+          this.#actions.resign(player.getUser());
+          const color = this.getPlayerColor(player.getUser());
+          if (color !== null) {
+            this.#players[color] = null;
+          }
+          this.callUpdate.updateGame();
+          this.emit('previewUpdated', this.getPreview());
+        }).on('timeLeft', () => {
+          this.#actions.resign(player.getUser());
+          this.callUpdate.updateGame();
+        });
         this.#players[color] = player;
         return true;
       }
@@ -289,6 +300,7 @@ export class GameRoom
         this.#internalGameState.gameStarted = true;
         this.updatePlayerTime('white', 0);
         this.updatePlayerTime('black', 0);
+        this.#players.white.startTimer();
       }
       return true;
     },
@@ -313,8 +325,14 @@ export class GameRoom
           dest: data.to,
           promotion: data.promotion as 'B' | 'N' | 'R' | 'Q' | undefined,
         });
+        const oppositeColor = color === 'white' ? 'black' : 'white';
         this.recalcPlayerTime(color);
-        this.updatePlayerTime(color === 'white' ? 'black' : 'white');
+        this.updatePlayerTime(oppositeColor);
+        this.#players[color]?.stopTimer();
+        const gameState = this.getGameState();
+        if (!gameState.gameOver) {
+          this.#players[oppositeColor]?.startTimer();
+        }
         return true;
       } catch (_) {
         return false;
@@ -331,6 +349,8 @@ export class GameRoom
       }
       this.recalcPlayerTime(gameState.turn, false);
       this.updatePlayerTime(gameState.turn === 'white' ? 'black' : 'white');
+      this.#players.white?.stopTimer();
+      this.#players.black?.stopTimer();
       this.#internalGameState.engine.resignGame(color);
       return true;
     },
@@ -349,6 +369,8 @@ export class GameRoom
       if (whiteDecision && blackDecision) {
         this.recalcPlayerTime(gameState.turn, false);
         this.updatePlayerTime(gameState.turn === 'white' ? 'black' : 'white');
+        this.#players.white?.stopTimer();
+        this.#players.black?.stopTimer();
         this.#internalGameState.engine.drawGame('Players accepted to draw');
       }
       return true;

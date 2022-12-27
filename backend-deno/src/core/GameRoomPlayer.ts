@@ -1,8 +1,15 @@
 import type { GameClientMessages } from '../validator/validator.ts';
 import type { WSUser } from './WSUser.ts';
 
+import { EventEmitter } from 'events';
+
 type User = WSUser<GameClientMessages>;
-export class GameRoomPlayer {
+type GameRoomPlayerEventMap = {
+  notReconnected: [];
+  timeLeft: [];
+};
+
+export class GameRoomPlayer extends EventEmitter<GameRoomPlayerEventMap> {
   #user: User;
   public getUser() {
     return this.#user;
@@ -10,6 +17,7 @@ export class GameRoomPlayer {
   public isUser(uuid: string) {
     return this.#user.uuid === uuid;
   }
+  #reconnectTimeout = -1;
   #disconnected = false;
   get disconnected() {
     return this.#disconnected;
@@ -17,15 +25,20 @@ export class GameRoomPlayer {
   public reconnect(user: User) {
     this.#user = user;
     this.#disconnected = false;
+    clearTimeout(this.#reconnectTimeout);
   }
   public disconnect() {
     this.#disconnected = true;
+    this.#reconnectTimeout = setTimeout(() => {
+      this.emit('notReconnected');
+    }, 30 * 1e3);
   }
   public timeControlState = {
     timeLeft: 0,
     timerStartTs: 0,
   };
   constructor(user: User) {
+    super();
     this.#user = user;
   }
   public getState() {
@@ -35,6 +48,15 @@ export class GameRoomPlayer {
       timeLeft: this.timeControlState.timeLeft,
       timerStartTs: this.timeControlState.timerStartTs,
     };
+  }
+  #moveTimer = -1;
+  public startTimer() {
+    this.#moveTimer = setTimeout(() => {
+      this.emit('timeLeft');
+    }, this.timeControlState.timeLeft);
+  }
+  public stopTimer() {
+    clearTimeout(this.#moveTimer);
   }
   readonly #internalState = {
     isReady: false,
@@ -69,6 +91,7 @@ export class GameRoomPlayer {
     this.setDrawOfferDecision(!this.isDrawOffered());
   }
   public reset(timeLeft: number) {
+    clearTimeout(this.#moveTimer);
     this.#internalState.isReady = false;
     this.#internalState.requestedNewGame = false;
     this.#internalState.drawOffered = false;
