@@ -1,3 +1,3 @@
-export const parseGameTimeConfig = (time: number[]) => {
-  return time[1] === 0 ? `${time[0]}m` : `${time[0]}m + ${time[1]}s`;
+export const parseGameTimeConfig = (time: { minutes: number; increment: number }) => {
+  return time.increment === 0 ? `${time.minutes}m` : `${time.minutes}m + ${time.increment}s`;
 };

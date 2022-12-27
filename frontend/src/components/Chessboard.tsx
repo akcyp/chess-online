@@ -89,12 +89,21 @@ export const Chessboard = ({
       events: {
         move(from, to) {
           const engine = new Chess(fen);
+          const turnColor = engine.turn() === 'w' ? 'white' : 'black';
           const promotions = findPromotionMoves(engine, from, to);
           if (promotions.possiblePromotions.length > 0) {
             onPromotion(promotions).then((promotionPassed) => {
               if (!promotionPassed) {
                 board.set({
                   fen,
+                  turnColor,
+                  check: engine.isCheck(),
+                  movable: {
+                    color: turnColor,
+                    dests: getMovesFromEngine(engine),
+                    free: false,
+                    showDests: true,
+                  },
                 });
               }
             });

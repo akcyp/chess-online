@@ -15,6 +15,11 @@ type GamePanelPlayerProps = {
   isYou: boolean;
 };
 
+type TimeControl = {
+  minutes: number;
+  increment: number;
+};
+
 export type GamePanelProps = {
   events: {
     askForStart: () => void;
@@ -29,7 +34,7 @@ export type GamePanelProps = {
   };
   config: {
     id: string;
-    time: number[];
+    time: TimeControl;
     orientation: 'white' | 'black';
   };
   players: {
@@ -38,14 +43,15 @@ export type GamePanelProps = {
   };
   game: {
     readyToPlay: boolean;
+    rematchOffered: boolean;
     gameStarted: boolean;
     gameOver: boolean;
     turn: null | 'white' | 'black';
-    winner: null | 'white' | 'black';
+    winner: null | 'white' | 'black' | 'draw';
   };
 };
 
-const converTimeToTs = (time: number[]) => time[0] * 6e4;
+const converTimeToTs = (time: TimeControl) => time.minutes * 6e4;
 
 export const GamePanel = ({ events, config, players, game }: GamePanelProps) => {
   const whitePlayerBox = useMemo(
@@ -116,7 +122,7 @@ export const GamePanel = ({ events, config, players, game }: GamePanelProps) => 
         {game.winner && (
           <Box textAlign="center" mt={2}>
             <Badge colorScheme="red" fontSize="xl">
-              {game.winner} won!
+              {game.winner} {game.winner === 'draw' ? '' : 'won!'}
             </Badge>
           </Box>
         )}
@@ -171,7 +177,7 @@ export const GamePanel = ({ events, config, players, game }: GamePanelProps) => 
               </Tooltip>
               <Tooltip label="Play again">
                 <IconButton
-                  colorScheme="orange"
+                  colorScheme={game.rematchOffered ? 'green' : 'orange'}
                   icon={<BsArrowRepeat />}
                   aria-label="Play again"
                   onClick={events.offerRematch}

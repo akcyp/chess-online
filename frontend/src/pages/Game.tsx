@@ -8,6 +8,8 @@ import { LoaderFunctionArgs, useLoaderData, useNavigate } from 'react-router-dom
 
 import { useWebsocketContext } from '../contexts/WebsocketContext';
 import { useKeyboard } from '../hooks/useKeyboard';
+import type { GameState } from '../types/GameState';
+import type { PlayerState } from '../types/PlayerState';
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { id = '' } = params;
@@ -39,13 +41,6 @@ export const GamePage = () => {
     [send],
   );
 
-  type PlayerState = {
-    nick: string;
-    online: boolean;
-    timeLeft: number;
-    lastTurnTs: number;
-    isYou: boolean;
-  };
   const [players, setPlayers] = useState<{
     white: PlayerState | null;
     black: PlayerState | null;
@@ -54,15 +49,13 @@ export const GamePage = () => {
     black: null,
   });
 
-  const [timeControl, setTimeControl] = useState([0, 0]);
-  const [gameState, setGameState] = useState<{
-    readyToPlay: boolean;
-    gameStarted: boolean;
-    gameOver: boolean;
-    turn: 'white' | 'black' | null;
-    winner: 'white' | 'black' | null;
-  }>({
+  const [timeControl, setTimeControl] = useState({
+    minutes: 0,
+    increment: 0,
+  });
+  const [gameState, setGameState] = useState<GameState>({
     readyToPlay: false,
+    rematchOffered: false,
     gameStarted: false,
     gameOver: false,
     turn: null,
@@ -81,15 +74,16 @@ export const GamePage = () => {
     if (lastMessage === null) return;
     switch (lastMessage.type) {
       case 'updateGameState': {
-        setTimeControl([lastMessage.timeControl.minutes, lastMessage.timeControl.increment]);
-        setFen(lastMessage.fen);
-        setGameState({
-          readyToPlay: lastMessage.readyToPlay,
-          gameStarted: lastMessage.gameStarted,
-          gameOver: lastMessage.gameOver,
-          turn: lastMessage.turn,
-          winner: lastMessage.winner,
-        });
+        if (!gameState.gameStarted && lastMessage.gameStarted) {
+          if (playAs !== null) {
+            setOrientation(playAs);
+          }
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { type: _, timeControl, fen, ...rest } = lastMessage;
+        setTimeControl(timeControl);
+        setFen(fen);
+        setGameState(rest);
         break;
       }
       case 'players': {
@@ -117,14 +111,15 @@ export const GamePage = () => {
                 performMove({ from, to });
               }}
               onPromotion={(promotion) => {
-                dispatchPromotionPromptAction({
-                  type: 'create',
-                  ...promotion,
+                return new Promise((res) => {
+                  dispatchPromotionPromptAction({
+                    type: 'create',
+                    callback: (v) => res(v),
+                    ...promotion,
+                  });
                 });
-                // TODO
-                return Promise.resolve(false);
               }}
-              orientation="white"
+              orientation={orientation}
               fen={fen}
               playAs={playAs}
               movable={movable}
@@ -137,7 +132,7 @@ export const GamePage = () => {
                 if (promotionPrompt.from && promotionPrompt.to) {
                   performMove({ from: promotionPrompt.from, to: promotionPrompt.to, promotion: selected });
                 }
-                dispatchPromotionPromptAction({ type: 'reset' });
+                dispatchPromotionPromptAction({ type: 'reset', success: true });
               }}
               onAbort={() => {
                 dispatchPromotionPromptAction({ type: 'reset' });

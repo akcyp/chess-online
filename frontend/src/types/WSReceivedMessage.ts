@@ -44,10 +44,11 @@ export type WSReceivedGameMessage =
         increment: number;
       };
       readyToPlay: boolean;
+      rematchOffered: boolean;
       gameStarted: boolean;
       gameOver: boolean;
       turn: 'white' | 'black' | null;
-      winner: 'white' | 'black' | null;
+      winner: 'draw' | 'white' | 'black' | null;
     };
 
 export type WSReceivedMessage = WSReceivedLobbyMessage | WSReceivedGameMessage;

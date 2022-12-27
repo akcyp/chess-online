@@ -17,11 +17,13 @@ export type ChessboardPromotionState = {
   from?: string;
   to?: string;
   possiblePromotions?: PieceSymbol[];
+  callback?: (v: boolean) => void;
 };
 
 export type ChessboardPromotionAction =
   | {
       type: 'reset';
+      success?: boolean;
     }
   | {
       type: 'create';
@@ -29,6 +31,7 @@ export type ChessboardPromotionAction =
       from: string;
       to: string;
       possiblePromotions: PieceSymbol[];
+      callback: (v: boolean) => void;
     };
 
 export const ChessboardPromotionReducer = (
@@ -37,6 +40,7 @@ export const ChessboardPromotionReducer = (
 ): ChessboardPromotionState => {
   switch (action.type) {
     case 'reset': {
+      state.callback?.(action.success ?? false);
       return {
         isOpen: false,
       };
