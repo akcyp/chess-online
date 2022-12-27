@@ -1,5 +1,5 @@
 import { Center, Grid, GridItem, useBoolean } from '@chakra-ui/react';
-import { Chessboard } from '@components/Chessboard';
+import { Chessboard, ChessboardProps } from '@components/Chessboard';
 import { ChessboardPromotion, ChessboardPromotionReducer } from '@components/ChessboardPromotion';
 import { DebugModal, getEngineState } from '@components/DebugModal';
 import { GamePanel } from '@components/GamePanel';
@@ -100,6 +100,19 @@ export const GamePage = () => {
     Escape: () => debugModal.toggle(),
   });
 
+  const onPromotion = useCallback<NonNullable<ChessboardProps['onPromotion']>>(
+    (promotion) => {
+      return new Promise((res) => {
+        dispatchPromotionPromptAction({
+          type: 'create',
+          callback: (v) => res(v),
+          ...promotion,
+        });
+      });
+    },
+    [dispatchPromotionPromptAction],
+  );
+
   return (
     <>
       <DebugModal data={getEngineState(fen)} isOpen={isDebugModalOpen} onClose={debugModal.off} />
@@ -107,22 +120,14 @@ export const GamePage = () => {
         <Grid gridTemplateAreas={[`"board" "panel"`, `"board panel"`]} gap={3} alignItems="center">
           <GridItem w={[300, 600]} h={[300, 600]} area="board">
             <Chessboard
-              onMove={({ from, to }) => {
-                performMove({ from, to });
-              }}
-              onPromotion={(promotion) => {
-                return new Promise((res) => {
-                  dispatchPromotionPromptAction({
-                    type: 'create',
-                    callback: (v) => res(v),
-                    ...promotion,
-                  });
-                });
-              }}
+              onMove={performMove}
+              onPromotion={onPromotion}
               orientation={orientation}
-              fen={fen}
-              playAs={playAs}
-              movable={movable}
+              config={{
+                fen,
+                playAs,
+                movable,
+              }}
             />
             <ChessboardPromotion
               isOpen={promotionPrompt.isOpen}

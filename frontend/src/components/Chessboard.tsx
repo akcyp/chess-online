@@ -26,9 +26,11 @@ export type ChessboardProps = {
     from: string;
     to: string;
   }) => Promise<boolean>;
-  playAs: 'white' | 'black' | null;
-  movable: boolean;
-  fen: string;
+  config: {
+    playAs: 'white' | 'black' | null;
+    movable: boolean;
+    fen: string;
+  };
 };
 
 const getMovesFromEngine = (engine: Chess) => {
@@ -46,17 +48,16 @@ export const Chessboard = ({
   onMove = () => void 0,
   onPromotion = () => Promise.resolve(false),
   orientation,
-  playAs,
-  movable,
-  fen,
+  config,
 }: ChessboardProps) => {
   const nativeRef = useRef<HTMLDivElement>(null);
+  const ignoreNextFenUpdate = useRef(false);
   const [board, setBoard] = useState<Api | null>(null);
 
   useEffect(() => {
     const chess = new Chess();
     try {
-      const loaded = chess.load(fen);
+      const loaded = chess.load(config.fen);
       if (!loaded) {
         throw new Error('Failed to load fen');
       }
@@ -66,36 +67,45 @@ export const Chessboard = ({
     }
     const turn = chess.turn() === 'w' ? 'white' : 'black';
     board?.set({
-      fen,
       check: chess.isCheck(),
       movable: {
-        color: playAs || 'white',
-        dests: playAs === turn && movable ? getMovesFromEngine(chess) : new Map(),
+        color: config.playAs || 'white',
+        dests: config.playAs === turn && config.movable ? getMovesFromEngine(chess) : new Map(),
         free: false,
         showDests: true,
       },
       turnColor: turn,
       selectable: {
-        enabled: movable,
+        enabled: true,
       },
       premovable: {
         enabled: false,
       },
     });
-  }, [board, movable, playAs, fen]);
+  }, [board, config]);
+
+  useEffect(() => {
+    if (ignoreNextFenUpdate.current === false) {
+      board?.set({
+        fen: config.fen,
+      });
+    } else {
+      ignoreNextFenUpdate.current = false;
+    }
+  }, [config.fen]);
 
   useEffect(() => {
     board?.set({
       events: {
         move(from, to) {
-          const engine = new Chess(fen);
+          const engine = new Chess(config.fen);
           const turnColor = engine.turn() === 'w' ? 'white' : 'black';
           const promotions = findPromotionMoves(engine, from, to);
           if (promotions.possiblePromotions.length > 0) {
             onPromotion(promotions).then((promotionPassed) => {
               if (!promotionPassed) {
                 board.set({
-                  fen,
+                  fen: config.fen,
                   turnColor,
                   check: engine.isCheck(),
                   movable: {
@@ -108,15 +118,16 @@ export const Chessboard = ({
               }
             });
           } else {
+            ignoreNextFenUpdate.current = true;
             onMove({ from, to });
           }
         },
       },
     });
-  }, [onMove, onPromotion, fen]);
+  }, [board, config.fen, onMove, onPromotion]);
 
   useEffect(() => {
-    board?.toggleOrientation();
+    board?.set({ orientation: orientation });
   }, [orientation]);
 
   useEffect(() => {
@@ -136,23 +147,6 @@ export const Chessboard = ({
         },
         premovable: {
           enabled: false,
-        },
-        events: {
-          move(from, to) {
-            const engine = new Chess(fen);
-            const promotions = findPromotionMoves(engine, from, to);
-            if (promotions.possiblePromotions.length > 0) {
-              onPromotion(promotions).then((promotionPassed) => {
-                if (!promotionPassed) {
-                  api.set({
-                    fen,
-                  });
-                }
-              });
-            } else {
-              onMove({ from, to });
-            }
-          },
         },
       });
       setBoard(api);

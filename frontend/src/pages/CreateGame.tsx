@@ -39,16 +39,18 @@ export const CreateGamePage = ({ type }: CreateGameProps) => {
   const gameCreatedEvent = useWSCachedMessage('gameCreated');
 
   const [pendingRequest, setPendingRequest] = useState(false);
+  const [minutesPerSideStep, setMinutesPerSideStep] = useState(10);
+  const [incrementStep, setIncrementStep] = useState(0);
 
   const onCreate = useCallback(() => {
     setPendingRequest(true);
     send({
       type: 'createGame',
-      minutes: minutesPerSideStep,
-      increment: incrementStep,
+      minutes: minutesSteps[minutesPerSideStep],
+      increment: incrementSteps[incrementStep],
       private: type === 'private',
     });
-  }, []);
+  }, [minutesPerSideStep, incrementStep]);
 
   useEffect(() => {
     if (gameCreatedEvent) {
@@ -60,9 +62,6 @@ export const CreateGamePage = ({ type }: CreateGameProps) => {
       }
     }
   }, [gameCreatedEvent]);
-
-  const [minutesPerSideStep, setMinutesPerSideStep] = useState(10);
-  const [incrementStep, setIncrementStep] = useState(0);
 
   return (
     <Center h="70vh">
