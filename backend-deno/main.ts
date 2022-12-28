@@ -16,7 +16,7 @@ if (import.meta.main) {
       `${isProd ? '/certs/' : '../certificates/'}cert.pem`,
     ),
     key: Deno.readTextFileSync(
-      `${isProd ? '/certs/key.pem' : '../certificates/'}key.pem`,
+      `${isProd ? '/certs/' : '../certificates/'}key.pem`,
     ),
   });
 }
