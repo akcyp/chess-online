@@ -1,6 +1,9 @@
 name: Deno backend code quality check
 
 on:
+  pull_request:
+    paths:
+      - "backend-deno/**"
   push:
     paths:
       - "backend-deno/**"

@@ -1,6 +1,9 @@
 name: Frontend code quality check
 
 on:
+  pull_request:
+    paths:
+      - "frontend/**"
   push:
     paths:
       - "frontend/**"

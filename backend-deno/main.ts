@@ -13,10 +13,10 @@ if (import.meta.main) {
     port: 3000,
     secure: true,
     cert: Deno.readTextFileSync(
-      isProd ? '/certs/cert.pem' : '../certificates/cert.pem',
+      `${isProd ? '/certs/' : '../certificates/'}cert.pem`,
     ),
     key: Deno.readTextFileSync(
-      isProd ? '/certs/key.pem' : '../certificates/key.pem',
+      `${isProd ? '/certs/key.pem' : '../certificates/'}key.pem`,
     ),
   });
 }
