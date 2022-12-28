@@ -37,7 +37,7 @@ router.use(async (ctx, next) => {
 router.use((ctx, next) => {
   ctx.response.headers.set(
     'Access-Control-Allow-Origin',
-    'https://localhost:4000',
+    Deno.env.get('BASE_URL') ?? 'https://localhost:4000',
   );
   ctx.response.headers.set('Access-Control-Allow-Credentials', 'true');
   ctx.response.headers.set('Access-Control-Allow-Headers', '*');

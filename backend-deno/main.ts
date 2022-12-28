@@ -10,7 +10,11 @@ if (import.meta.main) {
   await app.listen({
     port: 3000,
     secure: true,
-    cert: Deno.readTextFileSync('./certificates/localhost.pem'),
-    key: Deno.readTextFileSync('./certificates/localhost-key.pem'),
+    cert: Deno.readTextFileSync(
+      Deno.env.get('CERT_PATH') ?? '../certificates/localhost.pem',
+    ),
+    key: Deno.readTextFileSync(
+      Deno.env.get('CERT_KEY_PATH') ?? '../certificates/localhost-key.pem',
+    ),
   });
 }

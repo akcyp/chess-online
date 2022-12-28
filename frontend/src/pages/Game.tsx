@@ -13,7 +13,7 @@ import type { GameState } from '../types/GameState';
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { id = '' } = params;
   const response: { id: string; auth: { username: string } } = await fetch(
-    `https://${window.API_URL}/api/game/${id}`,
+    `${window.API_SECURE ? 'https' : 'http'}://${window.API_URL}/api/game/${id}`,
   ).then((res) => res.json());
   return { id: response.id, auth: response.auth };
 };

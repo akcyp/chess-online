@@ -1,5 +1,5 @@
 FROM denoland/deno:1.10.3
-EXPOSE 1993
+EXPOSE 3000
 WORKDIR /app
 USER deno
 

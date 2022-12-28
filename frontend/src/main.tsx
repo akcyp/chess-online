@@ -17,11 +17,11 @@ const router = createBrowserRouter([
   {
     path: '/',
     loader: async () => {
-      const response = (await fetch(`https://${window.API_URL}/api/lobby`, {
-        credentials: 'include',
-      }).then((res) => res.json())) as {
+      const response: {
         username: string;
-      };
+      } = await fetch(`${window.API_SECURE ? 'https' : 'http'}://${window.API_URL}/api/lobby`, {
+        credentials: 'include',
+      }).then((res) => res.json());
       return { auth: response };
     },
     element: (

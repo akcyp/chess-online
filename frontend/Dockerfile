@@ -8,5 +8,6 @@ RUN pnpm install --frozen-lockfile
 
 COPY ./ ./
 RUN pnpm run build
+EXPOSE 4000
 
-CMD ["pnpm", "run", "preview", "--port", "3000", "--host"]
+CMD ["pnpm", "run", "preview"]
