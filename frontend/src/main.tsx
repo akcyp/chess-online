@@ -5,6 +5,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
+import { ENDPOINTS } from './config';
 import { WebsocketProvider } from './contexts/WebsocketContext';
 import { BasicLayout } from './layouts/BasicLayout';
 import { NotFoundPage } from './pages/404';
@@ -19,7 +20,7 @@ const router = createBrowserRouter([
     loader: async () => {
       const response: {
         username: string;
-      } = await fetch(`${API_SECURE ? 'https' : 'http'}://${API_URL}/api/lobby`, {
+      } = await fetch(`${ENDPOINTS.API}/lobby`, {
         credentials: 'include',
       }).then((res) => res.json());
       return { auth: response };

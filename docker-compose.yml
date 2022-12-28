@@ -14,7 +14,7 @@ services:
       context: ./
       dockerfile: ./frontend/Dockerfile
       args:
-        API_URL: localhost
+        API_URL: /
     ports:
       - "3000"
 

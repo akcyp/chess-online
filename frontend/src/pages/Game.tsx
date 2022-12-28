@@ -6,15 +6,16 @@ import { GamePanel } from '@components/GamePanel';
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { LoaderFunctionArgs, useLoaderData, useNavigate } from 'react-router-dom';
 
+import { ENDPOINTS } from '../config';
 import { useWebsocketContext } from '../contexts/WebsocketContext';
 import { useKeyboard } from '../hooks/useKeyboard';
 import type { GameState } from '../types/GameState';
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { id = '' } = params;
-  const response: { id: string; auth: { username: string } } = await fetch(
-    `${API_SECURE ? 'https' : 'http'}://${API_URL}/api/game/${id}`,
-  ).then((res) => res.json());
+  const response: { id: string; auth: { username: string } } = await fetch(`${ENDPOINTS.API}/game/${id}`).then((res) =>
+    res.json(),
+  );
   return { id: response.id, auth: response.auth };
 };
 

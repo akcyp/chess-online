@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useLocation } from 'react-router-dom';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 
+import { ENDPOINTS } from '../config';
 import { WSReceivedMessage } from '../types/WSReceivedMessage';
 import { WSSendMessage } from '../types/WSSendMessage';
 
@@ -48,7 +49,7 @@ export const WebsocketProvider = ({ children }: { children: JSX.Element | JSX.El
     sendMessage,
     lastMessage: rawLastMessage,
     readyState,
-  } = useWebSocket(`wss://${API_URL}/ws/${socketNamespace}`, {
+  } = useWebSocket(`${ENDPOINTS.WS}/${socketNamespace}`, {
     shouldReconnect: () => true,
   });
 
