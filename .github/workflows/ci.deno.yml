@@ -14,7 +14,7 @@ jobs:
         working-directory: ./backend-deno
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
     env:
       CI: true
     steps:
@@ -29,4 +29,4 @@ jobs:
       - name: Lint
         run: deno lint
       - name: Type check
-        run: deno cache --import-map import_map.json **/*.{js,ts}
+        run: deno cache --import-map import_map.json **/*.ts
