@@ -48,7 +48,7 @@ export const WebsocketProvider = ({ children }: { children: JSX.Element | JSX.El
     sendMessage,
     lastMessage: rawLastMessage,
     readyState,
-  } = useWebSocket(`wss://${window.API_URL}/ws/${socketNamespace}`, {
+  } = useWebSocket(`wss://${API_URL}/ws/${socketNamespace}`, {
     shouldReconnect: () => true,
   });
 

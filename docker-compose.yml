@@ -2,24 +2,29 @@ version: "3"
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: ./backend-deno/Dockerfile
+    volumes:
+      - ./certificates:/srv/certs
     ports:
-      - "5000"
+      - "4000"
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    depends_on:
-      - backend
+      context: ./
+      dockerfile: ./frontend/Dockerfile
+      args:
+        API_URL: localhost
     ports:
       - "3000"
 
   nginx:
+    depends_on:
+      - backend
+      - frontend
     build:
-      context: ./nginx
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: ./nginx/Dockerfile
     restart: always
     ports:
-      - "80:80"
+      - "443:443"

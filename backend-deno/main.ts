@@ -3,6 +3,8 @@ import 'reflect-metadata';
 import { app } from './src/server.ts';
 import { router } from './src/routes.ts';
 
+const isProd = Deno.env.get('MODE') === 'PRODUCTION';
+
 if (import.meta.main) {
   app.use(router.routes());
   app.use(router.allowedMethods());
@@ -11,10 +13,10 @@ if (import.meta.main) {
     port: 3000,
     secure: true,
     cert: Deno.readTextFileSync(
-      Deno.env.get('CERT_PATH') ?? '../certificates/localhost.pem',
+      isProd ? '/certs/cert.pem' : '../certificates/cert.pem',
     ),
     key: Deno.readTextFileSync(
-      Deno.env.get('CERT_KEY_PATH') ?? '../certificates/localhost-key.pem',
+      isProd ? '/certs/key.pem' : '../certificates/key.pem',
     ),
   });
 }

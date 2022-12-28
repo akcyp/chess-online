@@ -19,7 +19,7 @@ const router = createBrowserRouter([
     loader: async () => {
       const response: {
         username: string;
-      } = await fetch(`${window.API_SECURE ? 'https' : 'http'}://${window.API_URL}/api/lobby`, {
+      } = await fetch(`${API_SECURE ? 'https' : 'http'}://${API_URL}/api/lobby`, {
         credentials: 'include',
       }).then((res) => res.json());
       return { auth: response };

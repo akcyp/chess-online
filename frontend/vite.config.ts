@@ -4,6 +4,8 @@ import { defineConfig } from 'vite';
 import eslint from 'vite-plugin-eslint';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
+const isProd = process.env.MODE === 'PRODUCTION';
+
 export default defineConfig({
   plugins: [react(), eslint(), tsconfigPaths()],
   define: {
@@ -12,11 +14,15 @@ export default defineConfig({
   },
   server: {
     https: {
-      cert: fs.readFileSync(process.env.CERT_PATH || '../certificates/localhost.pem'),
-      key: fs.readFileSync(process.env.CERT_KEY_PATH || '../certificates/localhost-key.pem'),
+      cert: fs.readFileSync(isProd ? '/certs/cert.pem' : '../certificates/cert.pem'),
+      key: fs.readFileSync(isProd ? '/certs/key.pem' : '../certificates/key.pem'),
     },
     strictPort: true,
     host: true,
+    port: 4000,
+  },
+  preview: {
+    strictPort: true,
     port: 4000,
   },
 });
