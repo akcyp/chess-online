@@ -60,6 +60,7 @@ type User = WSUser<GameClientMessages>;
 
 type GameRoomEventMap = BasicRoomEventMap<User> & {
   previewUpdated: [preview: GamePreview];
+  destroy: [];
 };
 
 export class GameRoom
@@ -81,6 +82,24 @@ export class GameRoom
   public isPrivate() {
     return this.#config.private;
   }
+  #destroyTimeout?: number = undefined;
+  #destroying = false;
+  private startDestroyTimeout() {
+    if (this.#destroying) {
+      this.stopDestroying();
+    }
+    this.#destroyTimeout = setTimeout(() => {
+      this.emit('destroy');
+    }, 45e3);
+    this.#destroying = true;
+  }
+  private stopDestroying() {
+    if (this.#destroying) {
+      clearTimeout(this.#destroyTimeout);
+      this.#destroyTimeout = undefined;
+      this.#destroying = false;
+    }
+  }
   constructor(config: GameRoomConfig) {
     super();
     this.#config = config;
@@ -94,6 +113,9 @@ export class GameRoom
         this.callUpdate.updateGame();
       }
     }).on('connect:after', (user) => {
+      if (this.getUsersCount() > 0) {
+        this.stopDestroying();
+      }
       const state = this.getUserState(user);
       user.send({
         type: 'updateGameState',
@@ -156,6 +178,9 @@ export class GameRoom
       if (this.#players.black?.isUser(user.uuid)) {
         this.#players.black.disconnect();
         this.callUpdate.updateGame();
+      }
+      if (this.getUsersCount() === 0) {
+        this.startDestroyTimeout();
       }
     });
   }

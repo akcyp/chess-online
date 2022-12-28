@@ -17,7 +17,7 @@ export class GameRoomPlayer extends EventEmitter<GameRoomPlayerEventMap> {
   public isUser(uuid: string) {
     return this.#user.uuid === uuid;
   }
-  #reconnectTimeout = -1;
+  #reconnectTimeout?: number = undefined;
   #disconnected = false;
   get disconnected() {
     return this.#disconnected;
@@ -26,6 +26,7 @@ export class GameRoomPlayer extends EventEmitter<GameRoomPlayerEventMap> {
     this.#user = user;
     this.#disconnected = false;
     clearTimeout(this.#reconnectTimeout);
+    this.#reconnectTimeout = undefined;
   }
   public disconnect() {
     this.#disconnected = true;

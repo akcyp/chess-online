@@ -23,7 +23,6 @@ export class LobbyManager
       user.on('message:parse:failed', (e) => {
         user.send({ error: e.message });
       }).on('message:parse:success', (data) => {
-        console.log(data, 'dispatcher');
         switch (data.type) {
           case 'createGame': {
             this.createGame(user, data.instance);
@@ -64,7 +63,6 @@ export class LobbyManager
     user: User,
     config: { minutes: number; increment: number; private: boolean },
   ) {
-    console.log('creategame tttt');
     const id = getUniqueString([...this.#games.keys()]);
     const room = new GameRoom({
       id,
@@ -72,10 +70,15 @@ export class LobbyManager
       incrementTime: config.increment,
       private: config.private,
     });
+    this.#games.set(id, room);
     room.on('previewUpdated', () => {
       this.emitUpdate.updateGames();
+    }).on('destroy', () => {
+      this.#games.delete(id);
+      if (!room.isPrivate()) {
+        this.emitUpdate.updateGames();
+      }
     });
-    this.#games.set(id, room);
     if (!room.isPrivate()) {
       this.emitUpdate.updateGames();
     }
