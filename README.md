@@ -1,9 +1,9 @@
 # Chess-online
 
-Online chess platform written with Deno & React
+Online chess platform written with Python & React
 
 <p align="middle">
-  <img src="https://raw.githubusercontent.com/denolib/high-res-deno-logo/master/deno_hr_circle.svg" width="100" />
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Python_logo_01.svg/800px-Python_logo_01.svg.png" width="100" />
   <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png" width="100" />
 </p>
 
@@ -34,7 +34,7 @@ docker-compose up
 ## Development
 
 You may need:
-- Deno v1.29.1 (backend)
+- Python3 v3.10.8 (backend)
 - Node v19.2.0 (frontend)
 - pnpm v7.19.0 (frontend, `corepack enable`)
 
@@ -46,7 +46,7 @@ pnpm run dev
 cd ..
 # Run backend development server
 cd backend
-deno cache main.ts
-deno task dev
+pip install -r -requirements.txt
+flask run --port=3000
 cd ..
 ```

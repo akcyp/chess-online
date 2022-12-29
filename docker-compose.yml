@@ -7,7 +7,7 @@ services:
     volumes:
       - ./certificates:/srv/certs
     ports:
-      - "4000"
+      - "3000"
 
   frontend:
     build:
@@ -16,7 +16,7 @@ services:
       args:
         API_URL: /
     ports:
-      - "3000"
+      - "4000"
 
   nginx:
     depends_on:

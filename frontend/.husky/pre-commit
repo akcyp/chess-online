@@ -6,5 +6,5 @@ pnpm run pre-commit
 cd ..
 
 cd backend
-deno fmt
+# ...
 cd ..

@@ -1,12 +1,17 @@
-FROM denoland/deno:1.29.1
+# syntax=docker/dockerfile:1
+FROM python:3.7-alpine
+
+WORKDIR /srv/app
+
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+
+RUN apk add --no-cache gcc musl-dev linux-headers
+
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+
 EXPOSE 3000
+COPY . .
 
-WORKDIR /app
-
-ADD ./backend/ .
-RUN deno cache main.ts
-
-ENV MODE "PRODUCTION"
-ADD ./certificates /certs
-
-CMD ["run", "--allow-net", "--allow-read", "--allow-env", "main.ts"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=3000"]
