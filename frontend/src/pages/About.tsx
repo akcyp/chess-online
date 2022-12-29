@@ -1,27 +1,14 @@
-import { Box, ListItem, UnorderedList } from '@chakra-ui/react';
+import { Box, Link, Text } from '@chakra-ui/react';
 
 export const AboutPage = () => {
   return (
     <Box>
-      <Box>Technology used:</Box>
-      <UnorderedList marginLeft={5}>
-        <ListItem>
-          Frontend:
-          <UnorderedList>
-            <ListItem>react</ListItem>
-            <ListItem>vite</ListItem>
-            <ListItem>react-router-dom</ListItem>
-            <ListItem>chakra UI</ListItem>
-            <ListItem>chessground</ListItem>
-          </UnorderedList>
-        </ListItem>
-        <ListItem>
-          Backend:
-          <UnorderedList>
-            <ListItem>python</ListItem>
-          </UnorderedList>
-        </ListItem>
-      </UnorderedList>
+      <Box p={2}>
+        <Text>Source code:</Text>
+        <Link as="a" target="_blank" href="https://github.com/akcyp/chess-online">
+          - https://github.com/akcyp/chess-online
+        </Link>
+      </Box>
     </Box>
   );
 };

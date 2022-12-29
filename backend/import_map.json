@@ -5,7 +5,6 @@
     "oak_sessions": "https://deno.land/x/oak_sessions@v4.0.6/mod.ts",
     "path": "https://deno.land/std@0.57.0/path/mod.ts",
     "chess": "https://deno.land/x/chess@0.5.0/mod.ts",
-    "socket-io": "https://deno.land/x/socket_io@0.2.0/mod.ts",
     "events": "https://deno.land/x/event@2.0.1/mod.ts",
     "logger": "https://deno.land/x/logger@v1.0.2/logger.ts",
     "unique-username-generator": "npm:unique-username-generator@1.1.3",
