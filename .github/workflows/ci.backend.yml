@@ -3,10 +3,10 @@ name: Deno backend code quality check
 on:
   pull_request:
     paths:
-      - "backend-deno/**"
+      - "backend/**"
   push:
     paths:
-      - "backend-deno/**"
+      - "backend/**"
 
 jobs:
   test:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        working-directory: ./backend-deno
+        working-directory: ./backend
     strategy:
       matrix:
         os: [ubuntu-latest]

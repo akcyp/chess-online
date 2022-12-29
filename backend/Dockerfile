@@ -3,7 +3,7 @@ EXPOSE 3000
 
 WORKDIR /app
 
-ADD ./backend-deno/ .
+ADD ./backend/ .
 RUN deno cache main.ts
 
 ENV MODE "PRODUCTION"

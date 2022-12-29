@@ -5,6 +5,6 @@ cd frontend
 pnpm run pre-commit
 cd ..
 
-cd backend-deno
+cd backend
 deno fmt
 cd ..

@@ -3,7 +3,7 @@ services:
   backend:
     build:
       context: ./
-      dockerfile: ./backend-deno/Dockerfile
+      dockerfile: ./backend/Dockerfile
     volumes:
       - ./certificates:/srv/certs
     ports:

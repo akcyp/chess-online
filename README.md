@@ -10,13 +10,13 @@ Online chess platform written with Deno & React
 ## Preview
 
 
-Mobile                     |  Desktop
-:-------------------------:|:-------------------------:
-![Mobile](docs/mobile.png) | ![Desktop](docs/game.png)
+Mobile                          |  Desktop
+:------------------------------:|:-------------------------:
+![Mobile](images/mobile.png)    | ![Desktop](images/game.png)
 
-Lobby                     |  New game
-:-------------------------:|:-------------------------:
-![Lobby](docs/lobby.png) | ![Desktop](docs/newgame.png)
+New game                        |  Lobby
+:------------------------------:|:-------------------------:
+![New game](images/newgame.png) | ![Lobby](images/lobby.png)
 
 ## Requirements
 
