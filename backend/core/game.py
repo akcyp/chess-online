@@ -264,6 +264,11 @@ class GameRoom(WS_Room):
             self.internal_game_state.is_game_over = True
 
         self.players[color] = None
+        opposite_color = 'white' if color == 'black' else 'back'
+
+        if self.internal_game_state.is_game_over and self.players.get(opposite_color) is None:
+            self.reset_game()
+
 
         await self.send_game_state()
         self.eventEmitter.emit('previewUpdate')
