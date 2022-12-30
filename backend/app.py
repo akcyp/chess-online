@@ -19,6 +19,7 @@ store = InMemorySessionInterface(
 )
 Session(app, interface=store)
 
+base_url = os.environ.get('BASE_URL') or 'https://localhost:4000'
 lobby = LobbyRoom()
 
 # Session regenerate
@@ -51,9 +52,13 @@ async def endpointLobby(request: Request):
     if sess_data is None:
         return empty(status=404)
 
-    return json({
+    response = json({
         'username': sess_data.get('username'),
     })
+    response.headers.add('Access-Control-Allow-Origin', base_url)
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Allow-Headers', '*')
+    return response
 
 # API Game Endpoint
 
@@ -69,13 +74,18 @@ async def endpointGame(request: Request, room_id: str):
     if room is None:
         return empty(status=404)
 
-    return json({
-        'id': room.room_id,
+    preview = room.get_preview()
+
+    response = json({
         'auth': {
             'username': sess_data.get('username'),
         },
-        # TODO: room get preview
+        **preview,
     })
+    response.headers.add('Access-Control-Allow-Origin', base_url)
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Allow-Headers', '*')
+    return response
 
 
 # WS Lobby Handler
