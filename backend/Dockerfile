@@ -1,12 +1,6 @@
-# syntax=docker/dockerfile:1
-FROM python:3.7-alpine
+FROM sanicframework/sanic:3.8-latest
 
-WORKDIR /srv/app
-
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-
-RUN apk add --no-cache gcc musl-dev linux-headers
+WORKDIR /sanic
 
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
@@ -14,4 +8,4 @@ RUN pip install -r requirements.txt
 EXPOSE 3000
 COPY . .
 
-CMD ["flask", "run", "--host=0.0.0.0", "--port=3000"]
+CMD ["python", "server.py"]
