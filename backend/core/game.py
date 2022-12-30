@@ -1,4 +1,6 @@
 import asyncio
+import chess
+import copy
 import json
 from typing import Dict, Union
 
@@ -17,6 +19,14 @@ from validators.game_rematch_action import GameRematchActionSchema
 from validators.game_resign_action import GameResignActionSchema
 
 
+class GameState:
+    def __init__(self):
+        self.game_started = False
+        self.is_draw = False
+        self.is_game_over = False
+        self.engine = chess.Board()
+
+
 class GameRoom(WS_Room):
     def __init__(self, room_id: str, private: bool = False, minutes: int = 5, increment: int = 0):
         super().__init__(room_id)
@@ -28,6 +38,8 @@ class GameRoom(WS_Room):
             'white': None,
             'black': None,
         }
+
+        self.internal_game_state = GameState()
 
         self.user_actions = AsyncIOEventEmitter()
         self.user_actions.on('move', self.on_move_action)
@@ -74,6 +86,8 @@ class GameRoom(WS_Room):
             self.player.get('black').reconnect(user)
             self.send_game_state(broadcast_user=user)
 
+        await user.send(self.get_full_game_state_for_user(user, self.get_full_game_state()))
+
     async def on_user_leave(self, user: WS_User):
         if self.players.get('white') is not None and self.player.get('white').user.userUUID == user.userUUID:
             self.player.get('white').disconnect()
@@ -89,21 +103,80 @@ class GameRoom(WS_Room):
     def get_preview(self):
         return {
             'id': self.room_id,
-            'player1': self.player_white.user.username if self.player_white is not None else '---',
-            'player2': self.player_black.user.username if self.player_black is not None else '---',
+            'player1': self.players.get('white').user.username if self.players.get('white') is not None else '---',
+            'player2': self.players.get('black').user.username if self.players.get('black') is not None else '---',
             'time': {
                 'minutes': self.minutes,
                 'increment': self.increment,
             },
         }
 
-    async def send_game_state(self, broadcast_user: Union[WS_User, None] = None):
-        state = {}
-        if broadcast_user is not None:
-            await self.broadcast(broadcast_user, state)
+    def get_game_state(self):
+        engine_result = self.internal_game_state.engine.result()
+        if self.internal_game_state.is_draw:
+            winner = 'draw'
+        elif engine_result == '0-1':
+            winner = 'black'
+        elif engine_result == '1-0':
+            winner = 'white'
         else:
-            await self.send(state)
-        pass
+            winner = None
+        return {
+            'fen': self.internal_game_state.engine.fen(),
+            'gameStarted': self.internal_game_state.game_started,
+            'gameOver': self.internal_game_state.is_game_over,
+            'turn': 'black' if self.internal_game_state.engine.turn == chess.BLACK else 'white',
+            'winner': winner,
+        }
+
+    def get_full_game_state(self):
+        game_state = self.get_game_state()
+
+        is_white_ready = self.players.get(
+            'white') is not None and self.players.get('white').is_ready
+        is_black_ready = self.players.get(
+            'black') is not None and self.players.get('black').is_ready
+
+        white_offered_draw = self.players.get(
+            'white') is not None and self.players.get('white').offered_draw
+        black_offered_draw = self.players.get(
+            'black') is not None and self.players.get('black').offered_draw
+
+        white_requested_new_game = self.players.get(
+            'white') is None or self.players.get('white').requested_new_game
+        black_requested_new_game = self.players.get(
+            'black') is None or self.players.get('black').requested_new_game
+
+        return {
+            'type': 'updateGameState',
+            'players': {
+                'white': {**self.players.get('white').get_state(), 'isYou': False} if self.players.get('white') is not None else None,
+                'black': {**self.players.get('black').get_state(), 'isYou': False} if self.players.get('black') is not None else None,
+            },
+            'game': {
+                'timeControl': {
+                    'minutes': self.minutes,
+                    'increment': self.increment,
+                },
+                'readyToPlay': is_white_ready or is_black_ready,
+                'rematchOffered': white_requested_new_game or black_requested_new_game,
+                'drawOffered': white_offered_draw or black_offered_draw,
+                **game_state
+            },
+        }
+
+    def get_full_game_state_for_user(self, user: WS_User, state: dict):
+        game_state = copy.deepcopy(state)
+        if self.players.get('white') is not None and self.players.get('white').user.userUUID == user.userUUID:
+            game_state['players']['white']['isYou'] = True
+        if self.players.get('black') is not None and self.players.get('black').user.userUUID == user.userUUID:
+            game_state['players']['black']['isYou'] = True
+        return game_state
+
+    async def send_game_state(self, broadcast_user: Union[WS_User, None] = None):
+        state = self.get_full_game_state()
+        self.iterate_users(lambda user: user.send(
+            state) if user != broadcast_user else None)
 
     async def on_user_message(self, user: WS_User, msg: str):
         try:

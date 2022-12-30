@@ -29,5 +29,9 @@ class WS_Room:
             if u != user:
                 await u.send(msg)
 
+    async def iterate_users(self, func):
+        for user in self.users:
+            await func(user)
+
     def __repr__(self):
         return f"WS_Room({self.room_id}, {self.users})"

@@ -101,7 +101,9 @@ class LobbyRoom(WS_Room):
         await self.send_games_state()
 
     async def on_game_update(self, game_id: str):
-        await self.send_games_state()
+        game = self.games[game_id]
+        if not game.private:
+            await self.send_games_state()
 
     def get_room(self, room_id: str):
         if room_id in self.games:
