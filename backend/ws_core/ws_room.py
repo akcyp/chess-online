@@ -30,12 +30,5 @@ class WS_Room:
             if u != user:
                 await u.send(msg)
 
-    async def iterate_users(self, func):
-        for user in self.users:
-            if asyncio.iscoroutinefunction(func):
-                await func(user)
-            elif func is not None:
-                func(user)
-
     def __repr__(self):
         return f"WS_Room({self.room_id}, {self.users})"

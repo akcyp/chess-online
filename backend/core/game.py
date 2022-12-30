@@ -176,12 +176,14 @@ class GameRoom(WS_Room):
 
     async def broadcast_game_state(self, broadcast_user: Union[WS_User, None] = None):
         state = self.get_full_game_state()
-        await self.iterate_users(lambda user: (user.send(
-            self.get_full_game_state_for_user(user, state)) if user != broadcast_user else None))
+        for user in self.users:
+            if user != broadcast_user:
+                await user.send(self.get_full_game_state_for_user(user, state))
 
     async def send_game_state(self):
         state = self.get_full_game_state()
-        await self.iterate_users(lambda user: user.send(self.get_full_game_state_for_user(user, state)))
+        for user in self.users:
+            await user.send(self.get_full_game_state_for_user(user, state))
 
     async def on_user_message(self, user: WS_User, msg: str):
         try:
