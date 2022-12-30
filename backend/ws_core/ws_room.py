@@ -1,3 +1,4 @@
+import asyncio
 from pyee.asyncio import AsyncIOEventEmitter
 
 from ws_core.ws_user import WS_User
@@ -31,7 +32,10 @@ class WS_Room:
 
     async def iterate_users(self, func):
         for user in self.users:
-            await func(user)
+            if asyncio.iscoroutinefunction(func):
+                await func(user)
+            elif func is not None:
+                func(user)
 
     def __repr__(self):
         return f"WS_Room({self.room_id}, {self.users})"

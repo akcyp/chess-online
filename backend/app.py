@@ -164,7 +164,7 @@ if __name__ == '__main__':
         'key': '/certs/key.pem' if is_prod else '../certificates/key.pem',
     }
     app.run(
-        host='127.0.0.1',
+        host='localhost' if is_dev else '0.0.0.0',
         port=3000,
         ssl=ssl,
         auto_reload=is_dev,

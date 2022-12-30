@@ -2,10 +2,13 @@ FROM sanicframework/sanic:3.8-latest
 
 WORKDIR /sanic
 
-COPY requirements.txt requirements.txt
+COPY ./backend/requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 EXPOSE 3000
-COPY . .
+COPY ./backend .
 
-CMD ["python", "server.py"]
+ENV MODE "PRODUCTION"
+ADD ./certificates /certs
+
+CMD ["python", "app.py"]
