@@ -51,7 +51,6 @@ export const Chessboard = ({
   config,
 }: ChessboardProps) => {
   const nativeRef = useRef<HTMLDivElement>(null);
-  const ignoreNextFenUpdate = useRef(false);
   const [board, setBoard] = useState<Api | null>(null);
 
   useEffect(() => {
@@ -86,13 +85,11 @@ export const Chessboard = ({
   }, [board, config]);
 
   useEffect(() => {
-    if (ignoreNextFenUpdate.current === false) {
+    if (board?.getFen() !== config.fen.split(' ')?.[0]) {
       board?.set({
         fen: config.fen,
         lastMove: undefined,
       });
-    } else {
-      ignoreNextFenUpdate.current = false;
     }
   }, [config.fen]);
 
@@ -121,7 +118,6 @@ export const Chessboard = ({
               }
             });
           } else {
-            ignoreNextFenUpdate.current = true;
             onMove({ from, to });
           }
         },
