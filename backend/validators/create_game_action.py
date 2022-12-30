@@ -3,8 +3,9 @@ from marshmallow import Schema, fields
 
 class CreateGameActionSchema(Schema):
     type = fields.Str(required=True, validate=lambda s: s == 'createGame')
-    minutes = fields.Int(required=True, validate=lambda n: n in minutes_steps)
-    increment = fields.Int(
+    minutes = fields.Float(
+        required=True, validate=lambda n: n in minutes_steps)
+    increment = fields.Float(
         required=True, validate=lambda n: n in increment_steps)
     private = fields.Bool(required=True)
 

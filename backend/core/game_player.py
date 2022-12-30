@@ -15,7 +15,7 @@ class GamePlayerState():
 
     def reset(self, timeLeft: int = 0):
         self.timeLeft = timeLeft
-        self.timerStartTs = int(time.time())
+        self.timerStartTs = int(time.time() * 1000)
         self.isReady = False
         self.requestedNewGame = False
         self.offeredDraw = False
@@ -29,6 +29,9 @@ class GamePlayer():
         self.internal_state = GamePlayerState()
         self.disconnect_timer: Union[asyncio.Task[None], None] = None
         self.move_timer: Union[asyncio.Task[None], None] = None
+
+    def is_user(self, user: WS_User):
+        return self.user.userUUID == user.userUUID
 
     async def disconnect_process(self):
         try:
@@ -68,17 +71,16 @@ class GamePlayer():
     def toggle_new_game_request(self):
         self.internal_state.requestedNewGame = not self.internal_state.requestedNewGame
 
-    async def timer_process(self, timeLeft: float):
+    async def timer_process(self):
         try:
-            await asyncio.sleep(timeLeft)
+            await asyncio.sleep(self.internal_state.timeLeft / 1000)
             self.eventEmitter.emit('timeOut')
         except asyncio.CancelledError:
             pass
 
     def start_timer(self):
         # Create cancelable timer
-        self.move_timer = asyncio.create_task(
-            self.timer_process(self.internal_state.timeLeft / 1000))
+        self.move_timer = asyncio.create_task(self.timer_process())
 
     def stop_timer(self):
         if self.move_timer is not None:
