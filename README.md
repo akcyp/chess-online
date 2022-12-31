@@ -47,6 +47,6 @@ cd ..
 # Run backend development server
 cd backend
 pip install -r -requirements.txt
-flask run --port=3000
+python3 app.py
 cd ..
 ```
