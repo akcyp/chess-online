@@ -23,7 +23,10 @@ class GamePlayerState():
 
 class GamePlayer():
     def __init__(self, user: WS_User):
-        self.user = user
+        self.users = []
+        self.users.append(user)
+        self.uuid = user.userUUID
+        self.username = user.username
         self.eventEmitter = AsyncIOEventEmitter()
         self.is_disconnected = False
         self.internal_state = GamePlayerState()
@@ -31,7 +34,7 @@ class GamePlayer():
         self.move_timer: Union[asyncio.Task[None], None] = None
 
     def is_user(self, user: WS_User):
-        return self.user.userUUID == user.userUUID
+        return self.uuid == user.userUUID
 
     async def disconnect_process(self):
         try:
@@ -40,16 +43,20 @@ class GamePlayer():
         except asyncio.CancelledError:
             pass
 
-    def disconnect(self):
-        self.is_disconnected = True
-        self.disconnect_timer = asyncio.create_task(self.disconnect_process())
+    def disconnect(self, user: WS_User):
+        self.users.remove(user)
+        if not self.users:
+            self.is_disconnected = True
+            self.disconnect_timer = asyncio.create_task(
+                self.disconnect_process())
 
     def reconnect(self, user: WS_User):
         if self.disconnect_timer is not None:
             self.disconnect_timer.cancel()
             self.disconnect_timer = None
+
         self.is_disconnected = False
-        self.user = user
+        self.users.append(user)
 
     def reset(self, timeLeft: int = 0):
         if self.disconnect_timer is not None:
@@ -79,7 +86,6 @@ class GamePlayer():
             pass
 
     def start_timer(self):
-        # Create cancelable timer
         self.move_timer = asyncio.create_task(self.timer_process())
 
     def stop_timer(self):
@@ -89,7 +95,7 @@ class GamePlayer():
 
     def get_state(self):
         return {
-            'nick': self.user.username,
+            'nick': self.username,
             'online': not self.is_disconnected,
             'timeLeft': self.internal_state.timeLeft,
             'timerStartTs': self.internal_state.timerStartTs,

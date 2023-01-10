@@ -91,11 +91,11 @@ class GameRoom(WS_Room):
 
     async def on_user_leave(self, user: WS_User):
         if self.players.get('white') is not None and self.players.get('white').is_user(user):
-            self.players.get('white').disconnect()
+            self.players.get('white').disconnect(user)
             await self.broadcast_game_state(broadcast_user=user)
 
         if self.players.get('black') is not None and self.players.get('black').is_user(user):
-            self.players.get('black').disconnect()
+            self.players.get('black').disconnect(user)
             await self.broadcast_game_state(broadcast_user=user)
 
         if len(self.users) == 0:
@@ -104,8 +104,8 @@ class GameRoom(WS_Room):
     def get_preview(self):
         return {
             'id': self.room_id,
-            'player1': self.players.get('white').user.username if self.players.get('white') is not None else '---',
-            'player2': self.players.get('black').user.username if self.players.get('black') is not None else '---',
+            'player1': self.players.get('white').username if self.players.get('white') is not None else '---',
+            'player2': self.players.get('black').username if self.players.get('black') is not None else '---',
             'time': {
                 'minutes': self.minutes,
                 'increment': self.increment,
@@ -264,11 +264,10 @@ class GameRoom(WS_Room):
             self.internal_game_state.is_game_over = True
 
         self.players[color] = None
-        opposite_color = 'white' if color == 'black' else 'back'
+        opposite_color = 'white' if color == 'black' else 'black'
 
         if self.internal_game_state.is_game_over and self.players.get(opposite_color) is None:
             self.reset_game()
-
 
         await self.send_game_state()
         self.eventEmitter.emit('previewUpdate')
